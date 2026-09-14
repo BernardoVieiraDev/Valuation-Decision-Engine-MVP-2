@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-dotenv
+aiohttp
+beautifulsoup4
+httpx
+yfinance
+brapi
+redis
