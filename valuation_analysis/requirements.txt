@@ -1,0 +1,6 @@
+django
+python-dotenv
+starlette
+requests
+groq
+litellm==1.100.1

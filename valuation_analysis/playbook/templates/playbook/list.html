@@ -1,0 +1,55 @@
+{% extends "base/base.html" %}
+
+{% block title %}Playbooks{% endblock %}
+{% block nav_playbook %}active{% endblock %}
+
+{% block content %}
+<header class="top-header">
+    <h1><i class="ph ph-book-open"></i> Playbook de Aportes</h1>
+    <p>Escolha um aporte do seu histórico para registrar sua análise de preço-teto.</p>
+</header>
+
+{% for message in messages %}<div class="alert alert-success" role="status">{{ message }}</div>{% endfor %}
+<div class="panel table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Data do Aporte</th>
+                <th>Total</th>
+                <th>Status Playbook</th>
+                <th style="text-align: right;">Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for aporte in aportes %}
+            <tr>
+                <td>{{ aporte.data_criacao|date:"d/m/Y" }}</td>
+                <td>R$ {{ aporte.valor_total|floatformat:2 }}</td>
+                <td>
+                    {% if aporte.diario_playbook and aporte.diario_playbook.dados_json.ativos %}
+                        <span class="text-success"><i class="ph ph-check-circle"></i> Preenchido</span>
+                    {% else %}
+                        <span style="color: var(--warning);"><i class="ph ph-warning-circle"></i> Pendente</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right;">
+                    <a href="{% url 'playbook_index' aporte.id %}" class="btn-primary" style="padding: 0.4rem 1rem;">
+                        <i class="ph ph-pencil-simple"></i> Abrir Playbook
+                    </a>
+                    <form method="post" action="{% url 'excluir_playbook' aporte.id %}" style="display:inline-block; margin:.5rem 0;" onsubmit="return confirm('Excluir este Playbook? Suas anotações serão apagadas. O aporte continuará no Histórico.');">
+                        {% csrf_token %}
+                        <button class="btn-outline btn-danger"><i class="ph ph-trash"></i> Excluir Playbook</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted);">
+                    Nenhum aporte encontrado no seu Histórico. Faça uma simulação primeiro.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

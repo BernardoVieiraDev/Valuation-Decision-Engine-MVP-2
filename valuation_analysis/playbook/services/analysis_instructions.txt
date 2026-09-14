@@ -1,0 +1,40 @@
+Você vai revisar, para cada ativo abaixo, se o preço-teto que eu já calculei é uma base razoável para eu decidir aportar ou se estou caindo em alguma armadilha ao usá-lo.
+
+MEU PERFIL (isso deve calibrar o rigor da sua análise):
+- Sou um investidor de perfil moderado. Não busco o preço-teto perfeito nem tento acertar o valor exato — quero um método que me dê uma margem de segurança razoável para decidir.
+- Um preço-teto não precisa ser perfeito para ser útil. Se a faixa de valor justo plausível for, por exemplo, de 10 a 15, não trate o método como inválido só porque ele fechou em 13 ou 14.
+- Não procure problema só para ter algo a apontar. Se os parâmetros e a metodologia forem razoáveis e o preço-teto não estiver enganoso, a conclusão pode e deve ser positiva, mesmo com pequenas ressalvas.
+
+REGRAS DE ESCOPO (siga à risca, definem o que eu quero e o que eu NÃO quero):
+- As empresas/fundos abaixo já foram analisados e aprovados por mim antes desta etapa. NÃO avalie a qualidade do negócio, setor, governança, moat etc. — está fora do escopo.
+- Eu já defini e confio na minha metodologia de preço-teto para cada ativo. Seu papel NÃO é propor outra metodologia nem questionar a metodologia em si (ex.: "por que Gordon e não um DCF completo?") — isso está fora de escopo. Avalie o método como ele é, aplicado a este ativo.
+- NÃO recomende comprar, vender ou manter nenhum ativo — isso não é uma recomendação de investimento.
+
+SOBRE OS DOIS TIPOS DE PARÂMETRO QUE VOU TE DAR, PARA CADA ATIVO:
+- "Premissas minhas": são escolhas subjetivas — minha opinião sobre o que é razoável assumir (ex.: crescimento perpétuo, prêmio de risco). Aqui você pode e deve questionar se o valor escolhido é plausível.
+- "Dados de mercado": são fatos objetivos (VPA, EBITDA, dívida líquida, dividendos históricos, Selic atual, etc.) que eu já pesquisei e validei para a data de hoje. Trate-os como corretos e use-os apenas para julgar a coerência do cálculo. NÃO pesquise, não tente verificar, não questione se estão desatualizados e não sugira buscar valores alternativos — isso seria desperdício, pois já são os dados disponíveis para mim agora.
+
+O QUE EU QUERO QUE VOCÊ AVALIE, PARA CADA ATIVO:
+1. Se a metodologia e os parâmetros (opinião + mercado) estão produzindo um preço-teto razoável.
+2. Se algum parâmetro está excessivamente otimista, irrealista ou inadequado para este ativo específico.
+3. Se alguma característica específica do ativo (setor, ciclo, regulação, estrutura de capital, natureza do negócio etc.) pode fazer esse preço-teto calculado ser enganoso.
+4. Se o preço-teto pode estar me dando uma falsa sensação de margem de segurança.
+5. Se, mesmo com pequenas imperfeições, o resultado ainda pode ser considerado uma aproximação aceitável de valor.
+6. Se existe algum motivo relevante para eu reavaliar o cálculo antes de aportar.
+
+FORMATO DE RESPOSTA OBRIGATÓRIO — para cada ativo, siga exatamente esta estrutura. Explique o raciocínio por trás da classificação mas mantenha objetividade — sem introdução geral e sem fechamento genérico:
+
+## Ativo — <TICKER>
+Classificação: <Não aportar | Não recomendado | Reavaliar | Aporte aceitável com ressalvas | Aporte indicado>
+
+Por que essa classificação:
+<2 a 4 frases explicando o raciocínio central.>
+
+Parâmetros que mais pesaram na avaliação:
+- <parâmetro>: <por que ele é razoável, frágil ou merece atenção>
+
+Possível armadilha:
+- <característica específica do ativo ou do conjunto de parâmetros que pode tornar esse preço-teto enganoso — ou "Nenhuma armadilha relevante identificada">
+
+O que revisar antes do aporte:
+- <ação concreta e específica — ou "Nada a revisar">

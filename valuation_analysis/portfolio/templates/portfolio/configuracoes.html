@@ -1,0 +1,676 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Playbook | Configurações{% endblock %}
+{% block nav_configuracoes %}active{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* ===== Layout geral da página ===== */
+    .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; }
+
+    .panel-header p.panel-subtitle {
+        margin: 0.2rem 0 0;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 400;
+    }
+
+    /* ===== Grupos de parâmetros dinâmicos por método ===== */
+    .param-group { display: none; }
+    .param-group.active {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.85rem;
+        align-items: start;
+        width: 100%;
+    }
+
+    /* Campo = rótulo + input + dica de exemplo (opcional) */
+    .field { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+    .field-label {
+        font-size: 0.52rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+        line-height: 1.2;
+    }
+    .field-hint {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        opacity: 0.75;
+        font-style: italic;
+        line-height: 1.2;
+    }
+
+    /* ===== Inputs ===== */
+    .param-input,
+    .table-input,
+    .table-select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.55rem 0.65rem;
+        border-radius: 8px;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        color: var(--text-main, #fff);
+        font-size: 0.85rem;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .param-input:focus,
+    .table-input:focus,
+    .table-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+    .param-input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+    .table-input { width: 90px; }
+
+    /* Campos percentuais: input + sufixo "%" fixo */
+    .field-input-wrap { position: relative; width: 100%; }
+    .field-input-wrap .percent-input { padding-right: 1.9rem; }
+    .field-unit {
+        position: absolute;
+        right: 0.65rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+
+    /* Nota informativa (ex.: método sem parâmetros dinâmicos) */
+    .method-note {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.65rem 0.85rem;
+        border: 1px dashed var(--border);
+        border-radius: 8px;
+        background: var(--bg-dark);
+        color: var(--text-muted);
+        font-size: 0.82rem;
+    }
+    .method-note i { font-size: 1rem; flex-shrink: 0; }
+
+    /* ===== Tabela de ativos ===== */
+    .data-table thead th {
+        text-align: left;
+        padding: 0.9rem 0.85rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+    .data-table tbody td {
+        padding: 1.1rem 0.85rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+    }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover { background: var(--bg-card); }
+    .ticker-cell { font-weight: 600; color: var(--text-main); white-space: nowrap; }
+
+    .panel-footer {
+        padding: 1.25rem 1.5rem;
+        text-align: right;
+        border-top: 1px solid var(--border);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="top-header">
+    <h1>Configurações do Sistema</h1>
+    <p>Defina parâmetros globais da carteira e ajuste o valuation de cada ativo individualmente.</p>
+</header>
+
+{% if erro %}
+    <div class="alert alert-danger"><i class="ph ph-warning-circle"></i> {{ erro }}</div>
+{% endif %}
+{% if sucesso %}
+    <div class="alert alert-success"><i class="ph ph-check-circle"></i> {{ sucesso }}</div>
+{% endif %}
+
+{% if carteira %}
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="ph ph-sliders"></i> Limites de Desbalanceamento</h2>
+            <p class="panel-subtitle">Faixas de tolerância usadas para sinalizar quando um ativo está desbalanceado em relação à meta.</p>
+        </div>
+        <div class="card-body" style="padding: 1.5rem;">
+            <form method="POST" id="form-limites">
+                {% csrf_token %}
+                <div class="config-grid">
+                    <div class="form-group" style="margin-top:0; padding: 0;">
+                        <label for="banda_mais">Banda Superior (+%)</label>
+                        <input type="number" step="any" id="banda_mais" name="banda_mais" value="{{ carteira.banda_mais|stringformat:'f' }}" class="form-input" required>
+                    </div>
+                    <div class="form-group" style="margin-top:0; padding: 0;">
+                        <label for="banda_menos">Banda Inferior (-%)</label>
+                        <input type="number" step="any" id="banda_menos" name="banda_menos" value="{{ carteira.banda_menos|stringformat:'f' }}" class="form-input" required>
+                    </div>
+                    <div class="form-group" style="margin-top:0; padding: 0;">
+                        <label for="margem_minima">Margem Segurança Mínima (%)</label>
+                        <input type="number" step="any" id="margem_minima" name="margem_minima" value="{{ carteira.margem_de_seguranca_minima|stringformat:'f' }}" class="form-input" required>
+                    </div>
+                </div>
+                <button type="submit" name="salvar_carteira" class="btn-primary" style="margin-top: 1.25rem;">
+                    <i class="ph ph-floppy-disk"></i> Salvar Limites
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="ph ph-faders"></i> Parâmetros por Ativo</h2>
+            <p class="panel-subtitle">Escolha o método de valuation de cada ativo e preencha os parâmetros usados no cálculo do valor justo. Campos percentuais aceitam o valor já em % (ex: 18 para 18%).</p>
+        </div>
+        <div class="table-container">
+            <form method="POST" id="form-ativos">
+                {% csrf_token %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ativo</th>
+                            <th>Qtd</th>
+                            <th>Método de Valuation</th>
+                            <th>Parâmetros Dinâmicos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ativo in carteira.ativos.all %}
+                        <tr>
+                            <td class="ticker-cell">{{ ativo.acao.ticket }}</td>
+                            <td>
+                                <input type="number" step="any" name="quantidade_{{ ativo.id }}" value="{{ ativo.quantidade }}" class="table-input" min="0">
+                            </td>
+                            <td>
+                                <select name="metodo_{{ ativo.id }}" class="table-select method-selector" data-id="{{ ativo.id }}">
+                                    <optgroup label="Genéricos">
+                                        <option value="graham"    {% if ativo.metodo_valuation == 'graham'    %}selected{% endif %}>Graham</option>
+                                        <option value="bazin"     {% if ativo.metodo_valuation == 'bazin'     %}selected{% endif %}>Bazin</option>
+                                        <option value="lynch"     {% if ativo.metodo_valuation == 'lynch'     %}selected{% endif %}>Peter Lynch</option>
+                                        <option value="dfc"       {% if ativo.metodo_valuation == 'dfc'       %}selected{% endif %}>DFC</option>
+                                        <option value="projetivo" {% if ativo.metodo_valuation == 'projetivo' %}selected{% endif %}>Projetivo</option>
+                                    </optgroup>
+                                    <optgroup label="Assets Formulas (Específicos)">
+                                        <option value="bbas" {% if ativo.metodo_valuation == 'bbas' %}selected{% endif %}>BBAS (P/VPA Justo)</option>
+                                        <option value="bbse" {% if ativo.metodo_valuation == 'bbse' %}selected{% endif %}>BBSE3 (Bazin Ajustado)</option>
+                                        <option value="brbi" {% if ativo.metodo_valuation == 'brbi' %}selected{% endif %}>BRBI11 (Gordon c/ Beta)</option>
+                                        <option value="flry" {% if ativo.metodo_valuation == 'flry' %}selected{% endif %}>FLRY3 (ROE-Ke-g)</option>
+                                        <option value="grnd" {% if ativo.metodo_valuation == 'grnd' %}selected{% endif %}>GRND3 (Gordon Nominal)</option>
+                                        <option value="itsa" {% if ativo.metodo_valuation == 'itsa' %}selected{% endif %}>ITSA4 (SOTP Holding)</option>
+                                        <option value="klbn" {% if ativo.metodo_valuation == 'klbn' %}selected{% endif %}>KLBN4 (EV/EBITDA Ciclo)</option>
+                                        <option value="petr" {% if ativo.metodo_valuation == 'petr' %}selected{% endif %}>PETR4 (Prêmio Específico)</option>
+                                        <option value="sapr" {% if ativo.metodo_valuation == 'sapr' %}selected{% endif %}>SAPR4 (P/VPA Saneamento)</option>
+                                        <option value="taee" {% if ativo.metodo_valuation == 'taee' %}selected{% endif %}>TAEE11 (DDM Real)</option>
+                                        <option value="vale" {% if ativo.metodo_valuation == 'vale' %}selected{% endif %}>VALE3 (EV Justo)</option>
+                                        <option value="wege" {% if ativo.metodo_valuation == 'wege' %}selected{% endif %}>WEGE3 (2 Estágios)</option>
+                                    </optgroup>
+                                </select>
+                            </td>
+                            <td style="min-width: 400px; max-width: 520px;">
+                                <!-- MÉTODOS GENÉRICOS (Legados) -->
+                                <div class="param-group param-graham-{{ ativo.id }} {% if ativo.metodo_valuation == 'graham' %}active{% endif %}">
+                                    <div class="method-note"><i class="ph ph-info"></i> Graham não exige parâmetros dinâmicos.</div>
+                                </div>
+
+                                <div class="param-group param-bazin-{{ ativo.id }} {% if ativo.metodo_valuation == 'bazin' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">DY Desejado (%)</label>
+                                        <input type="number" step="any" name="bazin_dy_{{ ativo.id }}" value="{{ ativo.parametro_bazin_dy|stringformat:'f' }}" class="param-input">
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-lynch-{{ ativo.id }} {% if ativo.metodo_valuation == 'lynch' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">Crescimento Esperado (%)</label>
+                                        <input type="number" step="any" name="lynch_cresc_{{ ativo.id }}" value="{{ ativo.parametro_lynch_crescimento|stringformat:'f' }}" class="param-input">
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-projetivo-{{ ativo.id }} {% if ativo.metodo_valuation == 'projetivo' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">P/L Justo</label>
+                                        <input type="number" step="any" name="proj_pl_{{ ativo.id }}" value="{{ ativo.parametro_projetivo_pl_justo|stringformat:'f' }}" class="param-input">
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-dfc-{{ ativo.id }} {% if ativo.metodo_valuation == 'dfc' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">Taxa de Desconto (%)</label>
+                                        <input type="number" step="any" name="dfc_taxa_{{ ativo.id }}" value="{{ ativo.parametro_dfc_taxa_desconto|stringformat:'f' }}" class="param-input">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Crescimento Perpétuo (%)</label>
+                                        <input type="number" step="any" name="dfc_cresc_{{ ativo.id }}" value="{{ ativo.parametro_dfc_crescimento|stringformat:'f' }}" class="param-input">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Fluxos de Caixa</label>
+                                        <input type="text" name="dfc_fluxos_{{ ativo.id }}" value="{{ ativo.parametro_dfc_fluxos }}" class="param-input" placeholder="[1.5, 1.8]">
+                                        <span class="field-hint">ex: [1.5, 1.8]</span>
+                                    </div>
+                                </div>
+
+                                <!-- MÉTODOS ESPECÍFICOS (Novos) -->
+                                <div class="param-group param-bbas-{{ ativo.id }} {% if ativo.metodo_valuation == 'bbas' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">ROE Normalizado (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_roe_normalizado" value="{{ ativo.parametros_especificos.roe_normalizado|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true" placeholder="18">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                        <span class="field-hint">ex: 18</span>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Taxa Livre de Risco  (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_taxa_livre_risco" value="{{ ativo.parametros_especificos.taxa_livre_risco|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true" placeholder="10">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                        <span class="field-hint">ex: 10</span>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Prêmio de Risco (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_premio_risco" value="{{ ativo.parametros_especificos.premio_risco|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true" placeholder="5">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                        <span class="field-hint">ex: 5</span>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Crescimento Perpétuo (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_crescimento_perpetuo" value="{{ ativo.parametros_especificos.crescimento_perpetuo|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true" placeholder="3">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                        <span class="field-hint">ex: 3</span>
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-bbse-{{ ativo.id }} {% if ativo.metodo_valuation == 'bbse' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">DY Mínimo Exigido (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_dy_minimo" value="{{ ativo.parametros_especificos.dy_minimo|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true" placeholder="8">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                        <span class="field-hint">ex: 8</span>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Dividendos (5 anos)</label>
+                                        <input type="text" name="spec_{{ ativo.id }}_dividendos_5_anos" value="{{ ativo.parametros_especificos.dividendos_5_anos|default:'' }}" class="param-input" placeholder="[1.2, 1.5, ...]">
+                                        <span class="field-hint">ex: [1.2, 1.5, ...]</span>
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-brbi-{{ ativo.id }} {% if ativo.metodo_valuation == 'brbi' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">ROE Normalizado (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_roe_normalizado" value="{{ ativo.parametros_especificos.roe_normalizado|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Taxa Livre de Risco (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_taxa_livre_risco" value="{{ ativo.parametros_especificos.taxa_livre_risco|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Prêmio de Risco (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_premio_risco" value="{{ ativo.parametros_especificos.premio_risco|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Beta</label>
+                                        <input type="number" step="any" name="spec_{{ ativo.id }}_beta" value="{{ ativo.parametros_especificos.beta|stringformat:'f'|default:'' }}" class="param-input">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Crescimento Perpétuo (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_crescimento_perpetuo" value="{{ ativo.parametros_especificos.crescimento_perpetuo|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-flry-{{ ativo.id }} {% if ativo.metodo_valuation == 'flry' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">ROE Normalizado (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_roe_normalizado" value="{{ ativo.parametros_especificos.roe_normalizado|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">g Real (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_g_real" value="{{ ativo.parametros_especificos.g_real|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Rf Real (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_rf_real" value="{{ ativo.parametros_especificos.rf_real|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">ERP - Prêmio de Risco (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_erp" value="{{ ativo.parametros_especificos.erp|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-grnd-{{ ativo.id }} {% if ativo.metodo_valuation == 'grnd' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">ROE Normalizado (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_roe_normalizado" value="{{ ativo.parametros_especificos.roe_normalizado|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Selic Atual (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_selic_atual" value="{{ ativo.parametros_especificos.selic_atual|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Prêmio de Risco (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_premio_risco" value="{{ ativo.parametros_especificos.premio_risco|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">IPCA Esperado (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_ipca_esperado" value="{{ ativo.parametros_especificos.ipca_esperado|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">g Real (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_g_real" value="{{ ativo.parametros_especificos.g_real|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-itsa-{{ ativo.id }} {% if ativo.metodo_valuation == 'itsa' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">Participações de Mercado</label>
+                                        <input type="text" name="spec_{{ ativo.id }}_participacoes_mercado" value="{{ ativo.parametros_especificos.participacoes_mercado|default:'' }}" class="param-input" placeholder="[1e9, 2e9]">
+                                        <span class="field-hint">ex: [1e9, 2e9]</span>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Desconto Alvo (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_desconto_alvo" value="{{ ativo.parametros_especificos.desconto_alvo|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true" placeholder="20">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                        <span class="field-hint">ex: 20</span>
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-klbn-{{ ativo.id }} {% if ativo.metodo_valuation == 'klbn' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">Histórico de EBITDA</label>
+                                        <input type="text" name="spec_{{ ativo.id }}_historico_ebitda" value="{{ ativo.parametros_especificos.historico_ebitda|default:'' }}" class="param-input" placeholder="[1e9, 1.2e9]">
+                                        <span class="field-hint">ex: [1e9, 1.2e9]</span>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Múltiplo Alvo EV/EBITDA</label>
+                                        <input type="number" step="any" name="spec_{{ ativo.id }}_multiplo_alvo_ev_ebitda" value="{{ ativo.parametros_especificos.multiplo_alvo_ev_ebitda|stringformat:'f'|default:'' }}" class="param-input">
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-petr-{{ ativo.id }} {% if ativo.metodo_valuation == 'petr' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">Taxa Livre de Risco Real (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_taxa_livre_risco_real" value="{{ ativo.parametros_especificos.taxa_livre_risco_real|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Prêmio de Risco Específico (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_premio_risco_especifico" value="{{ ativo.parametros_especificos.premio_risco_especifico|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Crescimento Real (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_crescimento_real" value="{{ ativo.parametros_especificos.crescimento_real|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">ROE Normalizado (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_roe_normalizado" value="{{ ativo.parametros_especificos.roe_normalizado|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-sapr-{{ ativo.id }} {% if ativo.metodo_valuation == 'sapr' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">ROE Normalizado (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_roe_normalizado" value="{{ ativo.parametros_especificos.roe_normalizado|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Crescimento Real (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_crescimento_real" value="{{ ativo.parametros_especificos.crescimento_real|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Taxa Livre de Risco Real (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_taxa_livre_risco_real" value="{{ ativo.parametros_especificos.taxa_livre_risco_real|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Prêmio de Risco (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_premio_risco" value="{{ ativo.parametros_especificos.premio_risco|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-taee-{{ ativo.id }} {% if ativo.metodo_valuation == 'taee' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">NTN-B Real (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_ntnb_real" value="{{ ativo.parametros_especificos.ntnb_real|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Prêmio de Risco (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_premio_risco" value="{{ ativo.parametros_especificos.premio_risco|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">IPCA Esperado (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_ipca_esperado" value="{{ ativo.parametros_especificos.ipca_esperado|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Crescimento Real (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_crescimento_real" value="{{ ativo.parametros_especificos.crescimento_real|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Dividendos (5 anos)</label>
+                                        <input type="text" name="spec_{{ ativo.id }}_historico_dividendos_5_anos" value="{{ ativo.parametros_especificos.historico_dividendos_5_anos|default:'' }}" class="param-input" placeholder="[2.1, 2.5]">
+                                        <span class="field-hint">ex: [2.1, 2.5]</span>
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-vale-{{ ativo.id }} {% if ativo.metodo_valuation == 'vale' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">EBITDA (TTM)</label>
+                                        <input type="number" step="any" name="spec_{{ ativo.id }}_ebitda_ttm" value="{{ ativo.parametros_especificos.ebitda_ttm|stringformat:'f'|default:'' }}" class="param-input">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Múltiplo EV/EBITDA</label>
+                                        <input type="number" step="any" name="spec_{{ ativo.id }}_multiplo_ev_ebitda" value="{{ ativo.parametros_especificos.multiplo_ev_ebitda|stringformat:'f'|default:'' }}" class="param-input">
+                                    </div>
+                                </div>
+
+                                <div class="param-group param-wege-{{ ativo.id }} {% if ativo.metodo_valuation == 'wege' %}active{% endif %}">
+                                    <div class="field">
+                                        <label class="field-label">Crescimento Fase 1 - g1 (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_g1" value="{{ ativo.parametros_especificos.g1|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true" placeholder="15">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                        <span class="field-hint">ex: 15</span>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Duração Fase 1 - Anos (n1)</label>
+                                        <input type="number" step="any" name="spec_{{ ativo.id }}_n1" value="{{ ativo.parametros_especificos.n1|default:'' }}" class="param-input" placeholder="5">
+                                        <span class="field-hint">ex: 5</span>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Crescimento Perpétuo - g3 (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_g3" value="{{ ativo.parametros_especificos.g3|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true" placeholder="3">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                        <span class="field-hint">ex: 3</span>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Taxa de Desconto - Ke (%)</label>
+                                        <div class="field-input-wrap">
+                                            <input type="number" step="any" name="spec_{{ ativo.id }}_ke" value="{{ ativo.parametros_especificos.ke|stringformat:'f'|default:'' }}" class="param-input percent-input" data-percent="true" placeholder="10">
+                                            <span class="field-unit">%</span>
+                                        </div>
+                                        <span class="field-hint">ex: 10</span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="panel-footer">
+                    <button type="submit" name="salvar_ativos" class="btn-primary">
+                        <i class="ph ph-floppy-disk"></i> Salvar Ativos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    /* =========================================================
+       Conversão decimal <-> percentual para os campos marcados
+       com data-percent="true" (class "percent-input").
+       O backend continua recebendo/enviando o valor decimal
+       (ex: 0.18); a interface exibe e aceita o valor em % (ex: 18).
+       ========================================================= */
+    function arredonda(numero, casas) {
+        const fator = Math.pow(10, casas);
+        return Math.round(numero * fator) / fator;
+    }
+
+    function removeZerosFinais(str) {
+        if (str.indexOf('.') === -1) return str;
+        return str.replace(/0+$/, '').replace(/\.$/, '');
+    }
+
+    function decimalParaPercentual(input) {
+        const bruto = input.value.trim();
+        if (bruto === '') return;
+        const numero = parseFloat(bruto);
+        if (isNaN(numero)) return;
+        const percentual = arredonda(numero * 100, 6);
+        input.value = removeZerosFinais(percentual.toString());
+    }
+
+    function percentualParaDecimal(input) {
+        const bruto = input.value.trim();
+        if (bruto === '') return;
+        const numero = parseFloat(bruto);
+        if (isNaN(numero)) return;
+        const decimal = arredonda(numero / 100, 8);
+        input.value = removeZerosFinais(decimal.toString());
+    }
+
+    // Ao carregar a página: exibe os valores decimais já salvos como percentual
+    document.querySelectorAll('input.percent-input[data-percent="true"]').forEach(decimalParaPercentual);
+
+    // Antes de enviar o formulário de ativos: converte percentual de volta para decimal
+    const formAtivos = document.getElementById('form-ativos');
+    if (formAtivos) {
+        formAtivos.addEventListener('submit', function() {
+            formAtivos.querySelectorAll('input.percent-input[data-percent="true"]').forEach(percentualParaDecimal);
+        });
+    }
+</script>
+<script>
+    document.querySelectorAll('.method-selector').forEach(select => {
+        select.addEventListener('change', function() {
+            const ativoId = this.getAttribute('data-id');
+            const selectedMethod = this.value;
+            
+            // Oculta e DESABILITA todos os grupos de parâmetros deste ativo
+            document.querySelectorAll(`.param-group[class*="-${ativoId}"]`).forEach(el => {
+                el.classList.remove('active');
+                // Campos desabilitados NÃO são enviados no request.POST
+                el.querySelectorAll('input').forEach(inp => inp.disabled = true);
+            });
+            
+            // Mostra e HABILITA apenas o grupo do método selecionado
+            const targetGroup = document.querySelector(`.param-${selectedMethod}-${ativoId}`);
+            if (targetGroup) {
+                targetGroup.classList.add('active');
+                targetGroup.querySelectorAll('input').forEach(inp => inp.disabled = false);
+            }
+        });
+        
+        // Força a execução do script assim que a página carrega para desabilitar os ocultos
+        select.dispatchEvent(new Event('change'));
+    });
+</script>
+{% endblock %}

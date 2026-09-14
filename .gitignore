@@ -1,0 +1,98 @@
+# =========================
+# Python
+# =========================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# =========================
+# Django
+# =========================
+
+# Local database
+db.sqlite3
+db.sqlite3-journal
+
+# Django generated files
+staticfiles/
+media/
+
+# Django cache
+*.log
+
+# =========================
+# FastAPI
+# =========================
+
+# Uvicorn / application logs
+*.log
+
+# =========================
+# Testing
+# =========================
+
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# =========================
+# Type checkers / linters
+# =========================
+
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyright/
+
+# =========================
+# IDEs / Editors
+# =========================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+# Build / Packaging
+# =========================
+
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# Jupyter
+# =========================
+
+.ipynb_checkpoints/
+
+# =========================
+# Local config
+# =========================
+
+*.local

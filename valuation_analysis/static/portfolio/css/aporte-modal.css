@@ -1,0 +1,15 @@
+#resumo-aporte { margin:auto; width:min(780px,calc(100% - 2rem)); max-height:90dvh; border:1px solid var(--border); border-radius:12px; background:var(--bg-panel); color:var(--text-main); padding:0; }
+#resumo-aporte::backdrop { background:rgba(0,0,0,.72); }
+#resumo-aporte .resumo-header { display:flex; justify-content:space-between; align-items:start; gap:1rem; padding:1.5rem; border-bottom:1px solid var(--border); }
+#resumo-aporte h2 { font-size:1.3rem; margin:0 0 .35rem; }
+#resumo-aporte p, #resumo-aporte dt { color:var(--text-muted); font-size:.85rem; }
+#resumo-aporte .resumo-body { padding:1.5rem; }
+#resumo-aporte .resumo-totais { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1rem 0 1.5rem; }
+#resumo-aporte .resumo-totais div { background:var(--bg-card); padding:1rem; border-radius:8px; }
+#resumo-aporte dd { font-size:1.1rem; font-weight:600; margin-top:.25rem; font-variant-numeric:tabular-nums; }
+#resumo-aporte .data-table td,#resumo-aporte .data-table th { padding:.85rem .6rem; font-size:.8rem; }
+#resumo-aporte .data-table td:not(:first-child) { text-align:right; }
+#resumo-aporte small { display:block; color:var(--text-muted); font-size:.65rem; }
+#resumo-aporte .resumo-nota { margin-top:1.25rem; }
+#resumo-aporte .resumo-footer { display:flex; flex-wrap:wrap; gap:.75rem; justify-content:flex-end; padding:1.25rem 1.5rem; background:var(--bg-card); border-top:1px solid var(--border); }
+@media(max-width:600px) { #resumo-aporte .resumo-totais { grid-template-columns:1fr; gap:.5rem; } #resumo-aporte .resumo-totais div { display:flex; justify-content:space-between; align-items:center; } #resumo-aporte .resumo-body,#resumo-aporte .resumo-header { padding:1rem; } }

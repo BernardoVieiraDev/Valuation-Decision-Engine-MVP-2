@@ -1,0 +1,50 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'portfolio/css/aporte-modal.css' %}">
+<dialog id="resumo-aporte" aria-labelledby="resumo-titulo" aria-describedby="resumo-descricao">
+  <header class="resumo-header">
+    <div><h2 id="resumo-titulo">Resumo da simulação</h2><p id="resumo-descricao">Confira a distribuição antes de salvar no Histórico.</p></div>
+    <button type="button" class="btn-outline" data-fechar-resumo aria-label="Fechar resumo">×</button>
+  </header>
+  <div class="resumo-body">
+    <p class="resumo-estrategia">Estratégia {% if resumo.estrategia == 'concentrado' %}concentrada{% else %}dividida{% endif %} · {{ resumo.itens|length }} ativo{{ resumo.itens|length|pluralize }}</p>
+    <dl class="resumo-totais">
+      <div><dt>Valor informado</dt><dd>R$ {{ resumo.valor_total|floatformat:2 }}</dd></div>
+      <div><dt>Total alocado</dt><dd class="text-success">R$ {{ resumo.total_alocado|floatformat:2 }}</dd></div>
+      <div><dt>Caixa restante</dt><dd>R$ {{ resumo.caixa|floatformat:2 }}</dd></div>
+    </dl>
+    {% if resumo.itens %}
+    <div class="table-container"><table class="data-table">
+      <thead><tr><th>Ativo</th><th>Preço atual</th><th>Preço-teto</th><th>Valor sugerido</th></tr></thead>
+      <tbody>{% for item in resumo.itens %}<tr>
+        <td><strong>{{ item.ticker }}</strong><small>{{ item.tipo_ativo|upper }}</small></td>
+        <td>R$ {{ item.preco_atual_momento|floatformat:2 }}</td>
+        <td>R$ {{ item.preco_teto_calculado|floatformat:2 }}</td>
+        <td class="text-success">R$ {{ item.valor_aportado|floatformat:2 }}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="resumo-nota">Deseja salvar este aporte? Ele ficará com o status <strong>Em Análise</strong>.</p>
+    {% else %}
+    <p class="resumo-nota">Nenhum ativo atende aos critérios desta simulação. Ajuste os filtros ou as configurações e tente novamente. Nenhum aporte foi salvo.</p>
+    {% endif %}
+  </div>
+  <footer class="resumo-footer">
+    <button type="button" class="btn-outline" data-fechar-resumo autofocus>{% if resumo.itens %}Não salvar{% else %}Voltar ao simulador{% endif %}</button>
+    {% if resumo.itens %}<form method="post" action="{% url 'salvar_simulacao' %}" id="confirmar-aporte">
+      {% csrf_token %}<input type="hidden" name="simulacao_token" value="{{ resumo.token }}">
+      <button class="btn-primary" type="submit">Salvar aporte</button>
+    </form>{% endif %}
+  </footer>
+</dialog>
+<script>
+(() => {
+  const modal = document.getElementById('resumo-aporte');
+  modal.showModal();
+  modal.querySelectorAll('[data-fechar-resumo]').forEach(button => button.addEventListener('click', () => modal.close()));
+  modal.addEventListener('close', () => document.querySelector('[name="calcular_aporte"]').focus());
+  document.getElementById('confirmar-aporte')?.addEventListener('submit', event => {
+    const button = event.currentTarget.querySelector('button');
+    button.disabled = true;
+    button.textContent = 'Salvando…';
+  });
+})();
+</script>

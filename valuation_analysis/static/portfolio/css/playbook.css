@@ -1,0 +1,78 @@
+/* Editor integrado aos tokens e à tipografia compartilhada do site. */
+.playbook-wrapper { color:var(--text-main); --ink:var(--text-main); --ink-soft:var(--text-muted); }
+.playbook-wrapper .app-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:2rem; }
+.playbook-wrapper h1 { font-size:1.8rem; font-weight:700; }
+.playbook-wrapper .tagline { color:var(--text-muted); font-size:.9rem; margin-top:.35rem; }
+.playbook-editor { width:100%; }
+.playbook-wrapper .aporte-meta { display:flex; gap:1rem; flex-wrap:wrap; background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; }
+.playbook-wrapper .field-inline { display:flex; flex-direction:column; gap:.5rem; flex:1; min-width:180px; }
+.playbook-wrapper .field-inline.grow { flex:2; }
+.playbook-wrapper label { color:var(--text-muted); font-size:.85rem; font-weight:500; }
+.playbook-wrapper input,.playbook-wrapper select,.playbook-wrapper textarea { background:var(--bg-dark); color:var(--text-main); border:1px solid var(--border); border-radius:8px; padding:.75rem; font:inherit; font-size:.9rem; min-width:0; color-scheme:dark; }
+.playbook-wrapper input:focus,.playbook-wrapper select:focus,.playbook-wrapper textarea:focus { outline:2px solid var(--primary); outline-offset:1px; }
+.playbook-wrapper textarea { resize:vertical; }
+.playbook-wrapper .ativo-card { background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; margin-bottom:1.5rem; overflow:hidden; }
+.playbook-wrapper .ativo-header { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; padding:1.25rem 1.5rem; background:var(--bg-card); }
+.playbook-wrapper .ativo-index { color:var(--text-muted); font-size:.75rem; }
+.playbook-wrapper .ticker-input { flex:1; min-width:120px; font-weight:600; }
+.playbook-wrapper .tipo-select { flex:2; min-width:200px; }
+.playbook-wrapper .btn-icon { width:36px; height:36px; border:1px solid var(--border); color:var(--danger); border-radius:8px; background:transparent; cursor:pointer; }
+.playbook-wrapper .zone { padding:1.5rem; border-top:1px solid var(--border); }
+.playbook-wrapper .zone h4 { display:flex; gap:.75rem; align-items:baseline; flex-wrap:wrap; font-size:1rem; font-weight:600; margin-bottom:1.25rem; }
+.playbook-wrapper .metodo { color:var(--text-muted); font-size:.8rem; font-weight:400; }
+.playbook-wrapper .jgrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; }
+.playbook-wrapper .jfield label { display:block; margin-bottom:.5rem; }
+.playbook-wrapper .jfield input,.playbook-wrapper .jfield select { width:100%; }
+.playbook-wrapper .preco-teto-block { border:1px solid var(--primary); background:var(--bg-card); border-radius:10px; padding:1.25rem; margin-bottom:1.5rem; }
+.playbook-wrapper .stamp-input-label { display:block; margin-bottom:.75rem; }
+.playbook-wrapper .stamp-input-row { display:flex; gap:.75rem; align-items:center; }
+.playbook-wrapper .stamp-prefix { font-size:1.25rem; font-weight:600; }
+.playbook-wrapper .stamp-input { flex:1; font-size:1.5rem; font-weight:600; font-variant-numeric:tabular-nums; }
+.playbook-wrapper .margem-live { margin-top:.75rem; font-size:.85rem; }
+.playbook-wrapper .pos { color:var(--success); }
+.playbook-wrapper .neg { color:var(--danger); }
+.playbook-wrapper .qgrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.playbook-wrapper .qfield { padding:1rem; border:1px solid var(--border); border-radius:8px; background:var(--bg-dark); min-width:0; }
+.playbook-wrapper .qlabel { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; font-size:.85rem; font-weight:600; margin-bottom:.75rem; }
+.playbook-wrapper .tag-subj,.playbook-wrapper .tag-market { color:var(--text-muted); border:1px solid var(--border); padding:.15rem .4rem; border-radius:4px; font-size:.6rem; font-weight:500; text-transform:uppercase; }
+.playbook-wrapper .market-subhead,.playbook-wrapper .quant-subhead { color:var(--text-muted); font-size:.8rem; font-weight:600; margin:1.25rem 0 .75rem; }
+.playbook-wrapper .field-row { display:flex; align-items:center; gap:.5rem; }
+.playbook-wrapper .qinput { width:100%; flex:1; background:var(--bg-panel); }
+.playbook-wrapper .unit { color:var(--text-muted); font-size:.75rem; }
+.playbook-wrapper .justify-block { margin-top:.85rem; }
+.playbook-wrapper .justify-q { display:block; margin-bottom:.5rem; font-size:.8rem; }
+.playbook-wrapper .qtextarea { width:100%; background:var(--bg-panel); }
+.playbook-wrapper .form-actions { display:flex; gap:.75rem; flex-wrap:wrap; justify-content:flex-end; margin:1.5rem 0; }
+.playbook-wrapper .btn-secondary-pb,.playbook-wrapper .btn-primary-pb { display:inline-flex; align-items:center; justify-content:center; padding:.7rem 1.1rem; border-radius:8px; font-size:.9rem; cursor:pointer; font-weight:500; text-decoration:none; }
+.playbook-wrapper .btn-secondary-pb { background:transparent; color:var(--text-main); border:1px solid var(--border); }
+.playbook-wrapper .btn-secondary-pb:hover { background:var(--bg-card); border-color:var(--primary); }
+.playbook-wrapper .btn-primary-pb { background:var(--primary); color:white; border:1px solid var(--primary); font-weight:600; }
+.playbook-wrapper .btn-primary-pb:hover { background:var(--primary-hover); }
+.playbook-wrapper .hint,.playbook-wrapper .microhelp { color:var(--text-muted); font-size:.85rem; }
+.playbook-wrapper .hint { padding:1.5rem; }
+.playbook-wrapper .error-banner { background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger); padding:1rem; border-radius:8px; }
+.playbook-wrapper .error-banner ul { padding-left:1.5rem; }
+.playbook-wrapper .toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%); background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); padding:1rem; border-radius:8px; opacity:0; pointer-events:none; z-index:100; max-width:90vw; }
+.playbook-wrapper .toast.show { opacity:1; }
+.playbook-wrapper .ia-panel { margin:2rem 0; border:1px solid var(--border); border-radius:12px; padding:1.5rem; background:var(--bg-panel); }
+.playbook-wrapper .ia-panel[hidden] { display:none; }
+.playbook-wrapper .ia-progresso { display:flex; align-items:center; gap:1rem; padding:1.25rem; margin:1rem 0; border:1px solid var(--primary); background:var(--bg-card); border-radius:10px; }
+.playbook-wrapper .ia-progresso[hidden],.playbook-wrapper #ia-salvar[hidden] { display:none; }
+.playbook-wrapper .ia-progresso p { color:var(--text-muted); margin:.4rem 0; font-size:.85rem; }
+.playbook-wrapper #ia-tempo { font-size:.8rem; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.playbook-wrapper .ia-spinner { flex-shrink:0; width:28px; height:28px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:ia-spin 1s linear infinite; }
+.playbook-wrapper #ia-salvamento { margin:1rem 0; }
+@keyframes ia-spin { to { transform:rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .playbook-wrapper .ia-spinner { animation:none; } }
+.playbook-wrapper .ia-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; }
+.playbook-wrapper .ia-header h2 { font-size:1.2rem; }
+.playbook-wrapper #ia-agente,.playbook-wrapper #ia-status,.playbook-wrapper #ia-tentativas { color:var(--text-muted); font-size:.85rem; margin:.75rem 0; }
+.playbook-wrapper #ia-tentativas { padding-left:1.25rem; }
+.playbook-wrapper .ia-texto { overflow-wrap:anywhere; line-height:1.7; }
+.playbook-wrapper .ia-texto h3 { font-size:1.05rem; color:var(--primary); margin:1.5rem 0 .75rem; }
+.playbook-wrapper .ia-texto p { margin:.65rem 0; }
+.playbook-wrapper .ia-selector { display:flex; align-items:center; gap:.6rem; margin-right:auto; flex-wrap:wrap; }
+.playbook-wrapper .ia-selector select { max-width:100%; }
+.playbook-wrapper button:disabled { opacity:.6; cursor:wait; }
+@media(max-width:1100px) { .playbook-wrapper .jgrid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { .playbook-wrapper .jgrid,.playbook-wrapper .qgrid { grid-template-columns:1fr; } .playbook-wrapper .zone,.playbook-wrapper .ativo-header,.playbook-wrapper .aporte-meta { padding:1rem; } .playbook-wrapper .tipo-select { min-width:0; flex-basis:100%; width:100%; } .playbook-wrapper .form-actions > button { width:100%; } .playbook-wrapper .field-inline { min-width:0; flex-basis:100%; } }

@@ -1,0 +1,81 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Playbook | Panorama Global{% endblock %}
+{% block nav_panorama %}active{% endblock %}
+{% block extra_styles %}
+<style>
+  .main-content > .container { max-width: 1600px; }
+  .panorama-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+  .panorama-heading h1 { font-size:1.8rem; }
+  .eyebrow { color:var(--primary); text-transform:uppercase; letter-spacing:.15em; font-size:.72rem; font-weight:700; margin-bottom:.4rem; }
+  .market-status { color:var(--text-muted); font-size:.8rem; margin:.7rem 0 1.5rem; }
+  .market-highlights { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; margin-bottom:2rem; }
+  .market-highlight { border:1px solid var(--border); background:var(--bg-panel); border-radius:10px; padding:1.2rem; }
+  .market-highlight dt { color:var(--text-muted); font-size:.85rem; }
+  .market-highlight dd { font-size:1.4rem; font-weight:600; font-variant-numeric:tabular-nums; margin-top:.5rem; }
+  .market-highlight small { display:block; color:var(--text-muted); font-size:.72rem; margin-top:.35rem; }
+  .panorama-layout { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:1.5rem; align-items:start; }
+  .panorama-layout > * { min-width:0; }
+  .market-secondary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+  .market-secondary .panel { margin:0; }
+  .market-secondary .panel:last-child { grid-column:1/-1; }
+  .panorama-layout .panel-header { padding:1rem 1.15rem; background:transparent; }
+  .panorama-layout .panel-header h2 { font-size:1rem; }
+  .panorama-layout .data-table td, .panorama-layout .data-table th { padding:.8rem 1rem; font-size:.82rem; }
+  .panorama-layout .data-table td:not(:first-child) { text-align:right; font-variant-numeric:tabular-nums; }
+  .panorama-layout .data-table td:first-child { white-space:normal; }
+  .indices-table { table-layout:fixed; }
+  .indices-table th:first-child { width:40%; }
+  .indices-table th:nth-child(2) { width:35%; }
+  .indices-table th:last-child { width:25%; }
+  .market-tabs { display:flex; gap:.35rem; padding:.9rem 1rem; overflow-x:auto; border-bottom:1px solid var(--border); }
+  .market-tab { color:var(--text-muted); background:transparent; border:0; padding:.5rem .65rem; border-radius:6px; cursor:pointer; white-space:nowrap; }
+  .market-tab[aria-pressed="true"] { background:var(--bg-card); color:var(--text-main); }
+  .market-tab:focus-visible { outline:2px solid var(--primary); }
+  .market-note { color:var(--text-muted); font-size:.75rem; padding:1rem; }
+  .market-state { color:var(--text-muted); text-align:center !important; padding:1.5rem !important; }
+  @media(max-width:1250px) { .panorama-layout { grid-template-columns:1fr; } }
+  @media(max-width:600px) { .market-highlights,.market-secondary { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-secondary .panel { grid-column:1/-1; } .market-highlight dd { font-size:1.15rem; } }
+  @media(max-width:600px) { .panorama-layout .data-table th { white-space:normal; font-size:.65rem; } .panorama-layout .data-table th,.panorama-layout .data-table td { padding:.75rem .55rem; } }
+</style>
+{% endblock %}
+{% block content %}
+<header class="panorama-heading">
+  <div><p class="eyebrow">Visão de mercado</p><h1>Panorama Global</h1></div>
+  <button type="button" id="refresh-market" class="btn-outline"><i class="ph ph-arrows-clockwise"></i> Atualizar panorama</button>
+</header>
+<p id="market-status" class="market-status" role="status" aria-live="polite">Consultando os mercados…</p>
+<dl class="market-highlights">
+  <div class="market-highlight"><dt>Dólar / Real</dt><dd id="highlight-usd">—</dd><small>Cotação em BRL</small></div>
+  <div class="market-highlight"><dt>Ibovespa</dt><dd id="highlight-ibov">—</dd><small>Pontos · índice brasileiro</small></div>
+  <div class="market-highlight"><dt>S&amp;P 500</dt><dd id="highlight-sp500">—</dd><small>Pontos · índice americano</small></div>
+  <div class="market-highlight"><dt>Bitcoin</dt><dd id="highlight-btc">—</dd><small>Cotação em USD</small></div>
+</dl>
+<div class="panorama-layout">
+  <section class="panel" aria-label="Mercados e índices">
+    <div class="panel-header"><h2>Mercados e índices</h2><i class="ph ph-globe"></i></div>
+    <div class="market-tabs" aria-label="Região do mercado">
+      <button class="market-tab" data-region="brasil" aria-pressed="true">Brasil</button>
+      <button class="market-tab" data-region="americas" aria-pressed="false">Américas</button>
+      <button class="market-tab" data-region="europa" aria-pressed="false">Europa</button>
+      <button class="market-tab" data-region="asia" aria-pressed="false">Ásia-Pacífico</button>
+      <button class="market-tab" data-region="etfs" aria-pressed="false">ETFs globais</button>
+    </div>
+    <div class="table-container"><table class="data-table indices-table">
+      <thead><tr><th scope="col">Índice / Ativo</th><th scope="col">Último valor</th><th scope="col">Variação</th></tr></thead>
+      <tbody id="market-indices"><tr><td colspan="3" class="market-state">Carregando…</td></tr></tbody>
+    </table></div>
+    <p class="market-note">Variações conforme o período informado pela fonte. ETFs são apresentados na moeda de cotação.</p>
+  </section>
+  <div class="market-secondary">
+    <section class="panel"><div class="panel-header"><h2>Moedas</h2><i class="ph ph-currency-circle-dollar"></i></div><table class="data-table"><tbody id="market-currency"><tr><td class="market-state">Carregando…</td></tr></tbody></table></section>
+    <section class="panel"><div class="panel-header"><h2>Commodities</h2><i class="ph ph-drop"></i></div><table class="data-table"><tbody id="market-commodities"><tr><td class="market-state">Carregando…</td></tr></tbody></table></section>
+    <section class="panel"><div class="panel-header"><h2>Juros EUA</h2><i class="ph ph-bank"></i></div><table class="data-table"><tbody id="market-rates"><tr><td class="market-state">Carregando…</td></tr></tbody></table></section>
+    <section class="panel"><div class="panel-header"><h2>Futuros</h2><i class="ph ph-chart-line-up"></i></div><table class="data-table"><tbody id="market-futures"><tr><td class="market-state">Carregando…</td></tr></tbody></table></section>
+    <section class="panel"><div class="panel-header"><h2>Criptomoedas</h2><i class="ph ph-currency-btc"></i></div><table class="data-table"><tbody id="market-crypto"><tr><td class="market-state">Carregando…</td></tr></tbody></table></section>
+  </div>
+</div>
+<p class="market-status">Dados consultados na API de mercado. As cotações podem ter atraso; o horário acima indica a consulta, não o horário de negociação.</p>
+<script src="{% static 'portfolio/js/panorama.js' %}" defer></script>
+{% endblock %}
+

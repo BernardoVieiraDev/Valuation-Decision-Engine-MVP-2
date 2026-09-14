@@ -1,0 +1,632 @@
+{
+  "graham": {
+    "label": "Benjamin Graham",
+    "metodo": "Fórmula de Graham (VPA x LPA x 22.5)",
+    "fields": [],
+    "marketFields": [
+      {
+        "key": "vpa",
+        "label": "VPA",
+        "unit": "R$"
+      },
+      {
+        "key": "lpa",
+        "label": "LPA",
+        "unit": "R$"
+      }
+    ]
+  },
+  "bazin": {
+    "label": "Décio Bazin",
+    "metodo": "Dividendos / DY Desejado",
+    "fields": [
+      {
+        "key": "dyMin",
+        "label": "DY Mínimo Aceitável",
+        "unit": "% a.a.",
+        "prompt": "Por que este DY mínimo?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "div",
+        "label": "Dividendos (12m ou média)",
+        "unit": "R$"
+      }
+    ]
+  },
+  "lynch": {
+    "label": "Peter Lynch",
+    "metodo": "PEG Ratio Justo",
+    "fields": [
+      {
+        "key": "g",
+        "label": "Crescimento Esperado (g)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse crescimento é sustentável?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "lpa",
+        "label": "LPA",
+        "unit": "R$"
+      },
+      {
+        "key": "pl",
+        "label": "P/L Atual",
+        "unit": "x"
+      }
+    ]
+  },
+  "dfc": {
+    "label": "Fluxo de Caixa Descontado (DFC)",
+    "metodo": "Valor Presente dos Fluxos + Perpetuidade",
+    "fields": [
+      {
+        "key": "ke",
+        "label": "Taxa de Desconto (Ke)",
+        "unit": "% a.a.",
+        "prompt": "Como chegou nessa taxa de desconto?"
+      },
+      {
+        "key": "g",
+        "label": "Crescimento na Perpetuidade",
+        "unit": "% a.a.",
+        "prompt": "É realista esse crescimento perpétuo?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "fluxos",
+        "label": "Fluxos Projetados",
+        "unit": "R$",
+        "list": true,
+        "placeholder": "Ex: 1.5; 1.8; 2.0"
+      }
+    ]
+  },
+  "projetivo": {
+    "label": "Modelo Projetivo",
+    "metodo": "LPA Projetado x P/L Justo",
+    "fields": [
+      {
+        "key": "plJusto",
+        "label": "P/L Justo Estimado",
+        "unit": "x",
+        "prompt": "Por que esse múltiplo é o justo?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "lpaProj",
+        "label": "LPA Projetado",
+        "unit": "R$"
+      }
+    ]
+  },
+  "bbas3": {
+    "label": "BBAS3 · Banco do Brasil",
+    "metodo": "P/VPA justo — ROE de ciclo sobre Ke (Modelo de Gordon)",
+    "fields": [
+      {
+        "key": "roe",
+        "label": "ROE normalizado de ciclo",
+        "unit": "% a.a.",
+        "prompt": "Por que esse ROE \"de ciclo\" e não o ROE do último resultado?"
+      },
+      {
+        "key": "erp",
+        "label": "Prêmio de risco exigido (ERP)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse prêmio de risco e não o prêmio histórico médio?"
+      },
+      {
+        "key": "g",
+        "label": "Crescimento perpétuo (g)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse crescimento é sustentável para sempre?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "vpa",
+        "label": "VPA (Valor Patrimonial por Ação)",
+        "unit": "R$"
+      },
+      {
+        "key": "rf",
+        "label": "Taxa livre de risco (Rf)",
+        "unit": "% a.a."
+      }
+    ]
+  },
+  "bbse3": {
+    "label": "BBSE3 · BB Seguridade",
+    "metodo": "Bazin ajustado — média de dividendos ÷ DY mínimo",
+    "fields": [
+      {
+        "key": "dyMin",
+        "label": "DY mínimo aceitável",
+        "unit": "% a.a.",
+        "prompt": "Por que esse é o seu DY mínimo para este ativo?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "div5anos",
+        "label": "Dividendos últimos 5 anos",
+        "unit": "R$/ação",
+        "list": true,
+        "placeholder": "Ex.: 1,20; 1,35; 1,10; 1,50"
+      }
+    ]
+  },
+  "brbi11": {
+    "label": "BRBI11 · BR Partners",
+    "metodo": "P/VPA justo com Beta — Modelo de Gordon",
+    "fields": [
+      {
+        "key": "roe",
+        "label": "ROE normalizado de ciclo",
+        "unit": "% a.a.",
+        "prompt": "Por que esse ROE normalizado?"
+      },
+      {
+        "key": "erp",
+        "label": "Prêmio de risco de mercado (ERP)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse prêmio de risco?"
+      },
+      {
+        "key": "g",
+        "label": "Crescimento perpétuo (g)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse crescimento perpétuo é razoável?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "vpa",
+        "label": "VPA",
+        "unit": "R$"
+      },
+      {
+        "key": "rf",
+        "label": "Taxa livre de risco",
+        "unit": "% a.a."
+      },
+      {
+        "key": "beta",
+        "label": "Beta do ativo",
+        "unit": ""
+      }
+    ]
+  },
+  "fii_papel": {
+    "label": "FII de Papel (CRI / Recebíveis)",
+    "metodo": "DY normalizado — ajusta a parcela CDI para a Selic de longo prazo",
+    "fields": [
+      {
+        "key": "selicNorm",
+        "label": "Selic normalizada",
+        "unit": "% a.a.",
+        "prompt": "Por que essa é a Selic \"normal\" de longo prazo?"
+      },
+      {
+        "key": "dyMin",
+        "label": "DY mínimo aceitável",
+        "unit": "% a.a.",
+        "prompt": "Por que esse DY mínimo?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "precoAtual",
+        "label": "Preço atual da cota",
+        "unit": "R$"
+      },
+      {
+        "key": "vpCota",
+        "label": "Valor patrimonial (VP/cota)",
+        "unit": "R$"
+      },
+      {
+        "key": "pctCdi",
+        "label": "% CDI",
+        "unit": "%"
+      },
+      {
+        "key": "pctIpca",
+        "label": "% IPCA+",
+        "unit": "%"
+      },
+      {
+        "key": "selicAtual",
+        "label": "Selic atual",
+        "unit": "% a.a."
+      },
+      {
+        "key": "div12m",
+        "label": "Div. 12 meses",
+        "unit": "R$/cota",
+        "list": true,
+        "placeholder": "0,09; 0,10; ..."
+      }
+    ]
+  },
+  "fii_tijolo": {
+    "label": "FII de Tijolo (Lajes / Galpões / Shoppings)",
+    "metodo": "Combinado — Yield Spread + DDM/Gordon",
+    "fields": [
+      {
+        "key": "divAnualNorm",
+        "label": "Dividendo anual normalizado",
+        "unit": "R$/cota",
+        "prompt": "Quais eventos você normalizou?"
+      },
+      {
+        "key": "estabilidade",
+        "label": "Estabilidade da renda",
+        "select": [
+          "Alta",
+          "Média",
+          "Baixa"
+        ],
+        "prompt": "Por que essa nota de estabilidade?"
+      },
+      {
+        "key": "crescimento",
+        "label": "Potencial de crescimento",
+        "select": [
+          "Alto",
+          "Médio",
+          "Nulo"
+        ],
+        "prompt": "Por que esse potencial?"
+      },
+      {
+        "key": "qualidade",
+        "label": "Qualidade dos ativos",
+        "select": [
+          "Alta",
+          "Média",
+          "Baixa"
+        ],
+        "prompt": "Por que essa nota?"
+      },
+      {
+        "key": "estresse",
+        "label": "Estresse operacional",
+        "select": [
+          "Não",
+          "Sim"
+        ],
+        "prompt": "Por que está/não está em estresse?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "ntnbRef",
+        "label": "NTN-B de referência",
+        "unit": "% a.a."
+      },
+      {
+        "key": "vpCota",
+        "label": "VP/cota",
+        "unit": "R$"
+      }
+    ]
+  },
+  "flry3": {
+    "label": "FLRY3 · Fleury",
+    "metodo": "ROE-Ke-g real",
+    "fields": [
+      {
+        "key": "roe",
+        "label": "ROE normalizado",
+        "unit": "% a.a.",
+        "prompt": "Como você ajustou as aquisições recentes?"
+      },
+      {
+        "key": "g",
+        "label": "Crescimento real (g)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse g real é sustentável?"
+      },
+      {
+        "key": "erp",
+        "label": "Prêmio de risco (ERP)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse prêmio de risco?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "vpa",
+        "label": "VPA",
+        "unit": "R$"
+      },
+      {
+        "key": "rfReal",
+        "label": "Taxa livre de risco real",
+        "unit": "% a.a."
+      }
+    ]
+  },
+  "grnd3": {
+    "label": "GRND3 · Grendene",
+    "metodo": "P/VPA justo nominal — Modelo de Gordon",
+    "fields": [
+      {
+        "key": "roe",
+        "label": "ROE sustentável",
+        "unit": "% a.a.",
+        "prompt": "Como tratou o caixa líquido robusto?"
+      },
+      {
+        "key": "erp",
+        "label": "Prêmio de risco",
+        "unit": "% a.a.",
+        "prompt": "Por que esse prêmio de risco?"
+      },
+      {
+        "key": "ipca",
+        "label": "IPCA esperado longo prazo",
+        "unit": "% a.a.",
+        "prompt": "Por que essa expectativa?"
+      },
+      {
+        "key": "g",
+        "label": "Crescimento real (g)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse crescimento?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "vpa",
+        "label": "VPA",
+        "unit": "R$"
+      },
+      {
+        "key": "selicAtual",
+        "label": "Selic atual",
+        "unit": "% a.a."
+      }
+    ]
+  },
+  "itsa4": {
+    "label": "ITSA4 · Itaúsa",
+    "metodo": "SOTP — soma das partes com desconto de holding",
+    "fields": [
+      {
+        "key": "desconto",
+        "label": "Desconto exigido",
+        "unit": "%",
+        "prompt": "Por que você exige esse desconto?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "participacoes",
+        "label": "Valor de mercado de cada part.",
+        "unit": "R$",
+        "list": true,
+        "placeholder": "Ex.: 45e9; 12e9"
+      },
+      {
+        "key": "totalAcoesHolding",
+        "label": "Total de ações da holding",
+        "unit": "ações"
+      }
+    ]
+  },
+  "klbn4": {
+    "label": "KLBN4 · Klabin",
+    "metodo": "EV/EBITDA de ciclo completo",
+    "fields": [
+      {
+        "key": "multiplo",
+        "label": "Múltiplo EV/EBITDA de ciclo completo",
+        "unit": "x",
+        "prompt": "Por que esse múltiplo?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "histEbitda",
+        "label": "EBITDA anual histórico",
+        "unit": "R$",
+        "list": true,
+        "placeholder": "Ex.: 4200M; 3900M"
+      },
+      {
+        "key": "dividaLiquida",
+        "label": "Dívida líquida",
+        "unit": "R$"
+      },
+      {
+        "key": "totalAcoes",
+        "label": "Total de ações",
+        "unit": "ações"
+      }
+    ]
+  },
+  "petr4": {
+    "label": "PETR4 · Petrobras",
+    "metodo": "ROE-Ke-g real",
+    "fields": [
+      {
+        "key": "erp",
+        "label": "Prêmio de risco específico",
+        "unit": "% a.a.",
+        "prompt": "Como você pondera o risco estatal?"
+      },
+      {
+        "key": "g",
+        "label": "Crescimento real (g)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse crescimento real?"
+      },
+      {
+        "key": "roe",
+        "label": "ROE normalizado",
+        "unit": "% a.a.",
+        "prompt": "Por que esse ROE normalizado?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "vpa",
+        "label": "VPA",
+        "unit": "R$"
+      },
+      {
+        "key": "rfReal",
+        "label": "Taxa livre de risco real",
+        "unit": "% a.a."
+      }
+    ]
+  },
+  "sapr4": {
+    "label": "SAPR4 · Sanepar",
+    "metodo": "ROE-Ke-g real",
+    "fields": [
+      {
+        "key": "roe",
+        "label": "ROE normalizado",
+        "unit": "% a.a.",
+        "prompt": "Ele considera o ciclo tarifário?"
+      },
+      {
+        "key": "g",
+        "label": "Crescimento real (g)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse crescimento real?"
+      },
+      {
+        "key": "erp",
+        "label": "Prêmio de risco",
+        "unit": "% a.a.",
+        "prompt": "Ele reflete o risco regulatório?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "vpa",
+        "label": "VPA",
+        "unit": "R$"
+      },
+      {
+        "key": "rfReal",
+        "label": "Taxa livre de risco real",
+        "unit": "% a.a."
+      }
+    ]
+  },
+  "taee11": {
+    "label": "TAEE11 · Taesa",
+    "metodo": "DDM / Gordon Growth — dividendo normalizado",
+    "fields": [
+      {
+        "key": "erp",
+        "label": "Prêmio de risco",
+        "unit": "% a.a.",
+        "prompt": "Por que esse prêmio de risco?"
+      },
+      {
+        "key": "ipca",
+        "label": "IPCA esperado longo prazo",
+        "unit": "% a.a.",
+        "prompt": "Por que essa expectativa?"
+      },
+      {
+        "key": "g",
+        "label": "Crescimento real (g)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse crescimento real?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "histDiv5anos",
+        "label": "Dividendos 5 anos",
+        "unit": "R$",
+        "list": true,
+        "placeholder": "Ex.: 2,10; 2,30"
+      },
+      {
+        "key": "ntnbReal",
+        "label": "NTN-B real de ref.",
+        "unit": "% a.a."
+      }
+    ]
+  },
+  "vale3": {
+    "label": "VALE3 · Vale",
+    "metodo": "EV/EBITDA de ciclo completo",
+    "fields": [
+      {
+        "key": "multiplo",
+        "label": "Múltiplo EV/EBITDA de ciclo",
+        "unit": "x",
+        "prompt": "Por que esse múltiplo de ciclo?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "ebitdaTtm",
+        "label": "EBITDA 12m",
+        "unit": "R$"
+      },
+      {
+        "key": "dividaLiquida",
+        "label": "Dívida líquida atual",
+        "unit": "R$"
+      },
+      {
+        "key": "totalAcoes",
+        "label": "Total de ações",
+        "unit": "ações"
+      }
+    ]
+  },
+  "wege3": {
+    "label": "WEGE3 · WEG",
+    "metodo": "DDM em 2 estágios sobre o LPA",
+    "fields": [
+      {
+        "key": "g1",
+        "label": "Crescimento Fase 1 (g1)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse crescimento na fase 1?"
+      },
+      {
+        "key": "n1",
+        "label": "Anos de alto crescimento (n1)",
+        "unit": "anos",
+        "prompt": "Por que essa duração?"
+      },
+      {
+        "key": "g3",
+        "label": "Crescimento perpétuo (g3)",
+        "unit": "% a.a.",
+        "prompt": "Por que esse crescimento terminal?"
+      },
+      {
+        "key": "ke",
+        "label": "Taxa de desconto (Ke)",
+        "unit": "% a.a.",
+        "prompt": "Quais componentes de risco embutiu?"
+      }
+    ],
+    "marketFields": [
+      {
+        "key": "lpaBase",
+        "label": "LPA base (12m)",
+        "unit": "R$"
+      }
+    ]
+  }
+}

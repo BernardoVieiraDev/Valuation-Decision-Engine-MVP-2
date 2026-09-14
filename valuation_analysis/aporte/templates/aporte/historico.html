@@ -1,0 +1,173 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Playbook | Histórico de Aportes{% endblock %}
+{% block nav_historico_aportes %}active{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .aporte-card {
+        margin-bottom: 2rem;
+    }
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .status-em_analise { background: rgba(255, 193, 7, 0.1); color: var(--warning); border: 1px solid var(--warning); }
+    .status-efetuado { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
+    .status-cancelado { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
+    
+    .aporte-footer {
+        padding: 1.5rem;
+        background: var(--bg-card);
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+    
+    .input-edit-valor {
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        padding: 0.4rem;
+        border-radius: 4px;
+        width: 100px;
+        font-weight: 600;
+        text-align: right;
+    }
+    .input-edit-valor:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+    .btn-icon {
+        background: none;
+        border: none;
+        color: var(--primary);
+        cursor: pointer;
+        font-size: 1.2rem;
+        vertical-align: middle;
+    }
+    .btn-icon:hover {
+        color: var(--primary-hover);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="top-header">
+    <h1><i class="ph ph-clock-counter-clockwise"></i> Histórico de Aportes</h1>
+    <p>Acompanhe os aportes simulados, confirme os que foram efetuados na corretora ou cancele os descartados.</p>
+</header>
+
+{% if messages %}
+    <div style="margin-bottom: 1.5rem;">
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-danger{% else %}alert-success{% endif %}">
+                <i class="ph ph-info"></i> {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if aportes %}
+    {% for aporte in aportes %}
+    <div class="panel aporte-card">
+        <div class="panel-header">
+            <div>
+                <h2>Aporte #{{ aporte.id }} - Total: R$ {{ aporte.valor_total|floatformat:2 }}</h2>
+                <span style="color: var(--text-muted); font-size: 0.85rem;">
+                    Data: {{ aporte.data_criacao|date:"d/m/Y H:i" }} | 
+                    Estratégia: <span style="text-transform: capitalize;">{{ aporte.estrategia_utilizada }}</span>
+                </span>
+            </div>
+            <div>
+                <span class="status-badge status-{{ aporte.status }}">
+                    {{ aporte.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Ativo</th>
+                        <th>Tipo</th>
+                        <th>Método (Snapshot)</th>
+                        <th>Preço no Momento</th>
+                        <th>Teto Calculado</th>
+                        <th style="text-align: right;">Valor Aportar</th>
+                    </tr>
+                </thead>
+<tbody>
+                    {% for item in aporte.ativos.all %}
+                    <tr>
+                        <td class="ticker-cell">{{ item.ticker }}</td>
+                        <td style="text-transform: uppercase; font-size: 0.8rem;">{{ item.tipo_ativo }}</td>
+                        <td><span class="method-badge">{{ item.metodo_valuation }}</span></td>
+                        <td>R$ {{ item.preco_atual_momento|floatformat:2 }}</td>
+                        
+                        {% if aporte.status == 'em_analise' %}
+                            <!-- Input Teto Calculado (Vinculado ao form da próxima coluna pelo atributo 'form') -->
+                            <td>
+                                R$ <input form="form_{{ item.id }}" type="number" step="any" name="preco_teto_calculado" value="{{ item.preco_teto_calculado|stringformat:'f' }}" class="input-edit-valor" style="width: 85px;">
+                            </td>
+                            
+                            <!-- Formulário e Input Valor Aportar -->
+                            <td style="text-align: right; font-weight: 700;">
+                                <form id="form_{{ item.id }}" method="POST" action="{% url 'editar_item_aporte' item.id %}" style="display: inline-flex; justify-content: flex-end; align-items: center; gap: 0.5rem;">
+                                    {% csrf_token %}
+                                    <span class="text-success">R$</span>
+                                    <input type="number" step="any" name="valor_aportado" value="{{ item.valor_aportado|stringformat:'f' }}" class="input-edit-valor text-success" required style="width: 100px;">
+                                    <button type="submit" class="btn-icon" title="Salvar Alterações">
+                                        <i class="ph ph-check-circle"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        {% else %}
+                            <td>R$ {{ item.preco_teto_calculado|floatformat:2 }}</td>
+                            <td style="text-align: right; font-weight: 700;">
+                                <span class="text-success">R$ {{ item.valor_aportado|floatformat:2 }}</span>
+                            </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="aporte-footer actions-inline">
+            {% if aporte.diario_playbook.excluido %}
+            <form method="post" action="{% url 'recriar_playbook' aporte.id %}">{% csrf_token %}
+                <button class="btn-outline">Recriar Playbook</button>
+            </form>
+            {% else %}
+            <a href="{% url 'playbook_index' aporte.id %}" class="btn-outline">Abrir Playbook</a>
+            {% endif %}
+            {% if aporte.status == 'em_analise' %}
+            <form method="post" action="{% url 'mudar_status_aporte' aporte.id %}" class="actions-inline">
+                {% csrf_token %}
+                <button name="status" value="cancelado" class="btn-outline">Cancelar Aporte</button>
+                <button name="status" value="efetuado" class="btn-primary">Marcar como Efetuado</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{% url 'excluir_aporte' aporte.id %}" onsubmit="return confirm('Excluir o aporte #{{ aporte.id }}, seus itens e o Playbook associado? Esta ação não pode ser desfeita.');">
+                {% csrf_token %}
+                <button class="btn-outline btn-danger"><i class="ph ph-trash"></i> Excluir aporte</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="panel" style="padding: 3rem; text-align: center;">
+        <i class="ph ph-empty" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+        <h3 style="color: var(--text-main);">Nenhum aporte no histórico</h3>
+        <p style="color: var(--text-muted);">Use o Simulador para gerar seu primeiro aporte e ele aparecerá aqui.</p>
+        <a href="{% url 'simulador_aporte' %}" class="btn-primary" style="margin-top: 1rem;">Ir para o Simulador</a>
+    </div>
+{% endif %}
+
+{% endblock %}

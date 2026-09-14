@@ -1,0 +1,491 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Playbook | Aporte #{{ aporte.id }}{% endblock %}
+{% block nav_playbook %}active{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{% static 'portfolio/css/playbook.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="playbook-wrapper">
+    <header class="app-header">
+      <div class="brand">
+        
+        <div>
+          <h1>Playbook: Aporte #{{ aporte.id }}</h1>
+          <p class="tagline">Valor Total: R$ {{ aporte.valor_total|floatformat:2 }} | Data: {{ aporte.data_criacao|date:"d/m/Y" }}</p>
+        </div>
+      </div>
+      <div>
+        <a href="{% url 'playbook_list' %}" class="btn-secondary-pb" style="text-decoration:none;">&larr; Voltar para Lista</a>
+      </div>
+    </header>
+
+    <div class="playbook-editor">
+      <section id="view-novo" class="view active"></section>
+    </div>
+    <div id="toast" class="toast"></div>
+    <section id="ia-painel" class="ia-panel" hidden aria-labelledby="ia-titulo">
+      <header class="ia-header"><h2 id="ia-titulo">Análise da IA</h2><span id="ia-agente"></span></header>
+      <div id="ia-progresso" class="ia-progresso" hidden>
+        <span class="ia-spinner" aria-hidden="true"></span>
+        <div><strong>A IA está trabalhando</strong><p>Aguardando a resposta. A análise pode levar alguns minutos.</p><span id="ia-tempo" aria-hidden="true">0s decorridos</span></div>
+      </div>
+      <p id="ia-status" role="status" aria-live="polite"></p>
+      <ul id="ia-tentativas"></ul>
+      <article id="ia-texto" class="ia-texto"></article>
+      <p id="ia-salvamento" class="microhelp"></p>
+      <button type="button" id="ia-salvar" class="btn-primary-pb" data-action="save-aporte" hidden>Salvar análise e Playbook</button>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ asset_types|json_script:"playbook-asset-types" }}
+{{ analise_salva|json_script:"playbook-analise-salva" }}
+<script>
+/* ======================= Utilidades e Assets ======================= */
+function num(x){ const n = parseFloat(x); return isNaN(n) ? 0 : n; }
+function esc(s){
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function uid(){
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+}
+function fmtBRL(n){
+  return (isFinite(n) ? n : 0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+function fmtPct(n){
+  return (isFinite(n) ? n : 0).toLocaleString('pt-BR', { maximumFractionDigits:1 }) + '%';
+}
+function fmtDate(iso){
+  if (!iso) return '—';
+  const parts = iso.split('-');
+  if (parts.length !== 3) return iso;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+const GATILHOS = [
+  { v:'rebalanceamento', l:'Rebalanceamento estratégico — voltar ao peso-alvo' },
+  { v:'distorcao',       l:'Distorção de preço — o mercado exagerou para baixo' },
+  { v:'fundamentos',     l:'Atualização de fundamentos — a empresa melhorou' },
+  { v:'catalisador',     l:'Evento / catalisador — situação especial de curto prazo' },
+  { v:'exploratoria',    l:'Posição exploratória — lote pequeno para acompanhar de perto' },
+];
+const HORIZONTES = ['Trimestres (< 1 ano)', '1 a 3 anos', '3 a 5 anos', 'Década (> 5 anos)'];
+
+const ASSET_TYPES = JSON.parse(document.getElementById("playbook-asset-types").textContent);
+
+function newAtivo(){
+  return {
+    id: uid(), ticker:'', tipo:'', values:{}, qty:'', precoPago:'', precoTeto:'',
+    gatilho:'', tese:'', conviccao:50, falseability:'', premortem:'', horizonte:'', alternativa:'',
+  };
+}
+function initValuesForTipo(tipo){
+  const cfg = ASSET_TYPES[tipo];
+  const values = {};
+  if (!cfg) return values;
+  cfg.fields.forEach(f => { values[f.key] = ''; values[f.key + '__just'] = ''; });
+  (cfg.marketFields || []).forEach(f => { values[f.key] = ''; });
+  return values;
+}
+
+/* CARREGA O ESTADO DO DJANGO (Injeção via Template) */
+let state = { 
+    aporteDate: "{{ aporte.data_criacao|date:'Y-m-d' }}", 
+    aporteNote: "{{ nota_geral|escapejs }}", 
+    ativos: {{ state_ativos_json|safe }} 
+};
+
+function renderNovoAporteShell(){
+  return `
+    <div class="aporte-meta">
+      <div class="field-inline">
+        <label>Data do aporte</label>
+        <input type="date" data-field="aporteData" value="${esc(state.aporteDate)}">
+      </div>
+      <div class="field-inline grow">
+        <label>Nota geral do aporte (opcional)</label>
+        <input type="text" data-field="aporteNota" value="${esc(state.aporteNote)}" placeholder="Ex.: aporte mensal de agosto">
+      </div>
+    </div>
+    <div id="ativos-container"></div>
+    <div class="form-actions">
+      <label class="ia-selector">Começar por
+        <select id="ia-agente-preferido">
+          <option value="">Automático: Claude → GPT → Kimi</option>
+          {% for agent in ai_agents %}<option value="{{ agent.id }}" {% if not agent.configured %}disabled{% endif %}>{{ agent.name }}{% if not agent.configured %} (não configurado){% endif %}</option>{% endfor %}
+        </select>
+      </label>
+      <button type="button" class="btn-secondary-pb" data-action="add-ativo">+ Adicionar outro ativo</button>
+      <button type="button" class="btn-secondary-pb" data-action="analisar-ia">Análise da IA</button>
+      <button type="button" class="btn-primary-pb" data-action="save-aporte">Salvar Playbook</button>
+    </div>
+    <div id="save-errors"></div>
+  `;
+}
+
+function renderField(ativo, f){
+  const val = ativo.values[f.key];
+  let control;
+  if (f.select){
+    control = `<select data-ativo-id="${ativo.id}" data-field="${f.key}" class="qinput">
+      <option value="">Selecione…</option>
+      ${f.select.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}
+    </select>`;
+  } else {
+    control = `<div class="field-row">
+      <input type="number" step="any" inputmode="decimal" data-ativo-id="${ativo.id}" data-field="${f.key}" value="${esc(val)}" class="qinput" placeholder="0">
+      ${f.unit ? `<span class="unit">${esc(f.unit)}</span>` : ''}
+    </div>`;
+  }
+  return `<div class="qfield">
+      <div class="qlabel">${esc(f.label)} <span class="tag-subj">premissa sua</span></div>
+      ${control}
+      <div class="justify-block">
+        <label class="justify-q">${esc(f.prompt)}</label>
+        <textarea data-ativo-id="${ativo.id}" data-field="${f.key}__just" class="qtextarea" rows="2" placeholder="Escreva sua justificativa…">${esc(ativo.values[f.key + '__just'])}</textarea>
+      </div>
+    </div>`;
+}
+
+function renderMarketField(ativo, f){
+  const val = ativo.values[f.key];
+  const control = `<div class="field-row">
+      <input type="${f.list ? 'text' : 'number'}" ${f.list ? '' : 'step="any" inputmode="decimal"'} data-ativo-id="${ativo.id}" data-field="${f.key}" value="${esc(val)}" class="qinput" placeholder="${f.list && f.placeholder ? esc(f.placeholder) : '0'}">
+      ${f.unit ? `<span class="unit">${esc(f.unit)}</span>` : ''}
+    </div>`;
+  return `<div class="qfield qfield-market">
+      <div class="qlabel">${esc(f.label)} <span class="tag-market">dado de mercado</span></div>
+      ${control}
+      ${f.list ? `<p class="microhelp" style="margin:6px 0 0;">Valores separados por vírgula ou ponto-e-vírgula.</p>` : ''}
+    </div>`;
+}
+
+function renderJournalFields(ativo){
+  return `
+    <div class="jgrid">
+      <div class="jfield">
+        <label>Quantidade (opcional)</label>
+        <input type="number" step="any" data-ativo-id="${ativo.id}" data-field="qty" value="${esc(ativo.qty)}" placeholder="0">
+      </div>
+      <div class="jfield">
+        <label>Preço pago/atual (R$)</label>
+        <input type="number" step="any" data-ativo-id="${ativo.id}" data-field="precoPago" value="${esc(ativo.precoPago)}" placeholder="0,00">
+      </div>
+      <div class="jfield">
+        <label>Gatilho da decisão</label>
+        <select data-ativo-id="${ativo.id}" data-field="gatilho">
+          <option value="">Selecione…</option>
+          ${GATILHOS.map(g => `<option value="${g.v}" ${ativo.gatilho===g.v?'selected':''}>${esc(g.l)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="jfield">
+        <label>Horizonte esperado</label>
+        <select data-ativo-id="${ativo.id}" data-field="horizonte">
+          <option value="">Selecione…</option>
+          ${HORIZONTES.map(h => `<option value="${h}" ${ativo.horizonte===h?'selected':''}>${esc(h)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+  `;
+}
+
+function renderMargemText(ativo){
+  if (!ativo.precoTeto || !ativo.precoPago){
+    return `<span class="microhelp" style="margin:0;">Informe o preço pago/atual para ver a margem.</span>`;
+  }
+  const teto = num(ativo.precoTeto);
+  const pago = num(ativo.precoPago);
+  if (teto <= 0) return '';
+  const margem = (teto - pago) / teto * 100;
+  const positivo = margem >= 0;
+  return `<span class="${positivo?'pos':'neg'}">${positivo ? 'Desconto de ' : 'Prêmio de '}${fmtPct(Math.abs(margem))} ${positivo ? 'sobre' : 'acima do'} preço-teto</span>`;
+}
+
+function formatTeto(value){
+  if (value === '' || value === null || value === undefined) return '';
+  const n = Number(String(value).replace(',', '.'));
+  return Number.isFinite(n) ? (Math.round((n + Number.EPSILON) * 100) / 100).toFixed(2) : '';
+}
+
+function renderPrecoTetoBlock(ativo){
+  ativo.precoTeto = formatTeto(ativo.precoTeto);
+  return `<div class="preco-teto-block">
+    <label class="stamp-input-label">Preço-teto que você calculou</label>
+    <div class="stamp-input-row">
+      <span class="stamp-prefix">R$</span>
+      <input type="number" step="0.01" min="0.01" inputmode="decimal" class="stamp-input" data-ativo-id="${ativo.id}" data-field="precoTeto" value="${esc(formatTeto(ativo.precoTeto))}" placeholder="35,00">
+    </div>
+    <div class="margem-live" id="margem-${ativo.id}">${renderMargemText(ativo)}</div>
+  </div>`;
+}
+
+function renderAtivoCard(ativo, idx){
+  const cfg = ativo.tipo ? ASSET_TYPES[ativo.tipo] : null;
+  return `
+  <div class="ativo-card" data-ativo-id="${ativo.id}">
+    <div class="ativo-header">
+      <span class="ativo-index">Ativo ${idx+1}</span>
+      <input type="text" class="ticker-input" placeholder="Ticker ou nome" data-ativo-id="${ativo.id}" data-field="ticker" value="${esc(ativo.ticker)}">
+      <select class="tipo-select" data-ativo-id="${ativo.id}" data-field="tipo">
+        <option value="">Metodologia de preço-teto…</option>
+        ${Object.entries(ASSET_TYPES).map(([k,c]) => `<option value="${k}" ${ativo.tipo===k?'selected':''}>${esc(c.label)}</option>`).join('')}
+      </select>
+      ${state.ativos.length > 1 ? `<button type="button" class="btn-icon" data-action="remove-ativo" data-ativo-id="${ativo.id}" title="Remover ativo">✕</button>` : ''}
+    </div>
+    ${!cfg ? `<p class="hint">Selecione a metodologia acima para carregar as premissas deste ativo. Dica: você pode preencher do zero clicando na lixeira e adicionando outro.</p>` : `
+    <div class="zone zone-journal">
+      <h4>Diário da decisão</h4>
+      ${renderJournalFields(ativo)}
+    </div>
+    <div class="zone zone-quant">
+      <h4>Premissas quantitativas <span class="metodo">${esc(cfg.metodo)}</span></h4>
+      ${renderPrecoTetoBlock(ativo)}
+      ${cfg.marketFields && cfg.marketFields.length ? `
+      <div class="market-subhead">
+        <span>Dados de mercado usados no cálculo</span>
+      </div>
+      <div class="qgrid qgrid-market">
+        ${cfg.marketFields.map(f => renderMarketField(ativo, f)).join('')}
+      </div>
+      ` : ''}
+      ${cfg.fields.length ? `
+      <div class="quant-subhead"><span>Premissas subjetivas (sua opinião)</span></div>
+      <div class="qgrid">
+        ${cfg.fields.map(f => renderField(ativo, f)).join('')}
+      </div>
+      ` : ''}
+    </div>
+    `}
+  </div>`;
+}
+
+function renderAtivosContainer(){
+  const el = document.getElementById('ativos-container');
+  if (!el) return;
+  el.innerHTML = state.ativos.map((a,i) => renderAtivoCard(a,i)).join('');
+}
+
+function validateAtivo(ativo){
+  const errs = [];
+  if (!ativo.ticker.trim()) errs.push('Ticker/nome do ativo');
+  if (!ativo.tipo){ errs.push('Metodologia de preço-teto'); return errs; }
+  const cfg = ASSET_TYPES[ativo.tipo];
+  if (!ativo.precoTeto) errs.push('Preço-teto que você calculou');
+  cfg.fields.forEach(f => {
+    if (ativo.values[f.key] === '' || ativo.values[f.key] === null || ativo.values[f.key] === undefined) errs.push(f.label);
+    if (!(ativo.values[f.key + '__just'] || '').trim()) errs.push(`Justificativa: ${f.label}`);
+  });
+  (cfg.marketFields || []).forEach(f => {
+    if (ativo.values[f.key] === '' || ativo.values[f.key] === null || ativo.values[f.key] === undefined) errs.push(f.label);
+  });
+  if (!ativo.precoPago) errs.push('Preço pago/atual');
+  if (!ativo.gatilho) errs.push('Gatilho da decisão');
+  if (!ativo.horizonte) errs.push('Horizonte esperado');
+  return errs;
+}
+
+let analiseEmAndamento = false;
+function renderAnalise(text) {
+  const container = document.getElementById('ia-texto');
+  container.replaceChildren();
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    const heading = /^#{1,3}\s/.test(line);
+    const element = document.createElement(heading ? 'h3' : 'p');
+    // Texto do modelo nunca é interpretado como HTML.
+    element.textContent = heading ? line.replace(/^#{1,3}\s+/, '') : line;
+    container.appendChild(element);
+  }
+}
+
+async function analisarIA() {
+  if (analiseEmAndamento) return;
+  const painel = document.getElementById('ia-painel');
+  const status = document.getElementById('ia-status');
+  const tentativas = document.getElementById('ia-tentativas');
+  const agente = document.getElementById('ia-agente');
+  const button = document.querySelector('[data-action="analisar-ia"]');
+  painel.hidden = false;
+  tentativas.replaceChildren();
+  painel.scrollIntoView({behavior:'smooth', block:'start'});
+  const ativos = state.ativos.filter(a => a.tipo);
+  if (!ativos.length || ativos.length !== state.ativos.length) {
+    status.textContent = 'Selecione a metodologia de todos os ativos antes de analisar.';
+    return;
+  }
+  const payload = {nota:state.aporteNote, ativos:state.ativos, agente:document.getElementById('ia-agente-preferido').value};
+  const revision = JSON.stringify({nota:state.aporteNote, ativos:state.ativos});
+  analiseEmAndamento = true;
+  document.querySelectorAll('[data-action="save-aporte"]').forEach(el => el.disabled = true);
+  document.getElementById('ia-progresso').hidden = false;
+  const started = Date.now();
+  document.getElementById('ia-tempo').textContent = '0s decorridos';
+  const timer = setInterval(() => {
+    document.getElementById('ia-tempo').textContent = `${Math.floor((Date.now()-started)/1000)}s decorridos`;
+  }, 1000);
+  button.disabled = true;
+  button.textContent = 'Analisando…';
+  painel.setAttribute('aria-busy','true');
+  status.textContent = 'Analisando o Playbook. Se necessário, o próximo agente será utilizado automaticamente.';
+  try {
+    const response = await fetch("{% url 'playbook_analisar' aporte.id %}", {
+      method:'POST',
+      headers:{'Content-Type':'application/json', 'X-CSRFToken':'{{ csrf_token }}'},
+      body:JSON.stringify(payload),
+    });
+    const result = await response.json();
+    (result.tentativas || []).forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = `${item.agente}: ${item.mensagem}${item.em_espera ? ' (aguardando nova tentativa)' : ''}`;
+      tentativas.appendChild(li);
+    });
+    if (!response.ok || !result.sucesso) {
+      status.textContent = result.erro || 'Não foi possível concluir a análise.';
+      return;
+    }
+    agente.textContent = `${result.agente} · ${result.modelo}`;
+    renderAnalise(result.analise);
+    analiseToken = result.analise_token;
+    document.getElementById('ia-salvar').hidden = false;
+    document.getElementById('ia-salvamento').textContent = 'Análise ainda não salva. Clique em “Salvar análise e Playbook” para guardar o resultado.';
+    const changed = revision !== JSON.stringify({nota:state.aporteNote, ativos:state.ativos});
+    status.textContent = [result.aviso || 'Análise concluída.', changed ? 'Os dados foram alterados durante a consulta; esta resposta corresponde ao envio anterior.' : '', 'O resultado inclui um registro dos dados enviados à IA.'].filter(Boolean).join(' ');
+  } catch (error) {
+    status.textContent = 'Não foi possível receber a análise. Verifique a conexão e tente novamente.';
+  } finally {
+    clearInterval(timer);
+    document.getElementById('ia-progresso').hidden = true;
+    document.querySelectorAll('[data-action="save-aporte"]').forEach(el => el.disabled = false);
+    analiseEmAndamento = false;
+    button.disabled = false;
+    button.textContent = 'Análise da IA';
+    painel.setAttribute('aria-busy','false');
+  }
+}
+
+let toastTimer;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+async function saveAporte(){
+  if (analiseEmAndamento) return;
+  const allErrs = [];
+  state.ativos.forEach((a,i) => {
+    a.precoTeto = formatTeto(a.precoTeto);
+    const errs = validateAtivo(a);
+    if (errs.length) allErrs.push(`Ativo ${i+1} (${a.ticker || 'sem nome'}): ${errs.join(', ')}`);
+  });
+  const errBox = document.getElementById('save-errors');
+  if (allErrs.length){
+    errBox.innerHTML = `<div class="error-banner">Corrija antes de salvar:<ul>${allErrs.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`;
+    errBox.scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+  errBox.innerHTML = '';
+  const payload = { nota: state.aporteNote, ativos: state.ativos };
+  if (analiseToken) payload.analise_token = analiseToken;
+
+  try {
+    const response = await fetch("{% url 'playbook_salvar' aporte.id %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.erro || 'Falha ao salvar no banco de dados.');
+    }
+    
+    showToast('Playbook salvo com sucesso!');
+    setTimeout(() => { window.location.href = "{% url 'playbook_list' %}"; }, 1500);
+  } catch(e){
+    errBox.innerHTML = `<div class="error-banner">Não foi possível salvar agora. ${esc(e.message)}</div>`;
+    errBox.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+
+function handleFieldChange(e){
+  const t = e.target;
+  const field = t.dataset ? t.dataset.field : null;
+  if (!field) return;
+
+  if (t.dataset.ativoId){
+    const ativo = state.ativos.find(a => a.id === t.dataset.ativoId);
+    if (!ativo) return;
+
+    if (field === 'tipo'){
+      ativo.tipo = t.value;
+      ativo.values = ativo.tipo ? initValuesForTipo(ativo.tipo) : {};
+      ativo.precoTeto = '';
+      renderAtivosContainer();
+      return;
+    }
+    if (['ticker','qty','precoPago','precoTeto','gatilho','horizonte'].includes(field)){
+      if (field === 'precoTeto' && e.type === 'change') t.value = formatTeto(t.value);
+      ativo[field] = t.value;
+
+      if (field === 'precoTeto' || field === 'precoPago'){
+        const margemEl = document.getElementById('margem-' + ativo.id);
+        if (margemEl) margemEl.innerHTML = renderMargemText(ativo);
+      }
+      return;
+    }
+
+    ativo.values[field] = t.value;
+    return;
+  }
+
+  if (field === 'aporteData') state.aporteDate = t.value;
+  if (field === 'aporteNota') state.aporteNote = t.value;
+}
+
+function handleClick(e){
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const ativoId = btn.dataset.ativoId;
+
+  if (action === 'add-ativo'){
+    state.ativos.push(newAtivo());
+    renderAtivosContainer();
+  } else if (action === 'remove-ativo'){
+    state.ativos = state.ativos.filter(a => a.id !== ativoId);
+    renderAtivosContainer();
+  } else if (action === 'save-aporte'){
+    saveAporte();
+  } else if (action === 'analisar-ia'){
+    analisarIA();
+  }
+}
+
+let analiseToken = null;
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('view-novo').innerHTML = renderNovoAporteShell();
+  renderAtivosContainer();
+  const saved = JSON.parse(document.getElementById('playbook-analise-salva').textContent);
+  if (saved && saved.analise) {
+    document.getElementById('ia-painel').hidden = false;
+    document.getElementById('ia-agente').textContent = `${saved.agente} · ${saved.modelo || ''}`;
+    renderAnalise(saved.analise);
+    document.getElementById('ia-status').textContent = saved.aviso || 'Análise salva.';
+    document.getElementById('ia-salvamento').textContent = `Gerada em ${new Date(saved.gerada_em).toLocaleString('pt-BR')}. Corresponde aos dados enviados naquele momento; alterações posteriores não atualizam a análise.`;
+  }
+
+  document.body.addEventListener('input', handleFieldChange);
+  document.body.addEventListener('change', handleFieldChange);
+  document.body.addEventListener('click', handleClick);
+});
+</script>
+{% endblock %}

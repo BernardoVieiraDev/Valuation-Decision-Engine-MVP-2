@@ -1,0 +1,102 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Gerenciar Ativos - {{ carteira.nome }}{% endblock %}
+
+{% block nav_gerenciar_ativos %}active{% endblock %}
+
+{% block content %}
+<header class="top-header">
+    <h1><i class="ph ph-list-plus"></i> Gerenciar Ativos</h1>
+    <p>Adicione novos tickers à sua carteira ou remova ativos existentes.</p>
+</header>
+
+{% if messages %}
+    <div class="messages-container" style="margin-bottom: 1.5rem;">
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">
+                <i class="ph {% if message.tags == 'error' %}ph-warning-circle{% else %}ph-check-circle{% endif %}"></i> 
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<div class="panel">
+    <div class="panel-header">
+        <h2><i class="ph ph-plus-circle"></i> Adicionar Novo Ativo</h2>
+    </div>
+    <form method="POST" action="{% url 'adicionar_ativo' %}" style="padding: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        {% csrf_token %}
+        <div class="form-group" style="margin: 0; flex: 1; min-width: 200px; padding: 0;">
+            <label for="ticket">Ticker do Ativo (ex: PETR4, WEGE3)</label>
+            <input type="text" class="form-input" id="ticket" name="ticket" placeholder="Digite o código" required>
+        </div>
+        <div class="form-group" style="margin: 0; flex: 2; min-width: 250px; padding: 0;">
+            <label for="nome">Nome da Empresa (Opcional)</label>
+            <input type="text" class="form-input" id="nome" name="nome" placeholder="Nome da Razão Social">
+        </div>
+        <div style="margin-bottom: 0;">
+            <button type="submit" class="btn-primary">
+                <i class="ph ph-plus"></i> Adicionar
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h2><i class="ph ph-folder-open"></i> Ativos Atuais na {{ carteira.nome }}</h2>
+    </div>
+    
+    <div class="table-container">
+        {% if ativos %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Ticker</th>
+                        <th>Nome da Empresa</th>
+                        <th>Preço Atual</th>
+                        <th>Qtd</th>
+                        <th>Método de Valuation</th>
+                        <th style="text-align: center;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ativo in ativos %}
+                        <tr>
+                            <td class="ticker-cell">{{ ativo.acao.ticket }}</td>
+                            <td>{{ ativo.acao.nome }}</td>
+                            <td>R$ {{ ativo.acao.preco_atual|floatformat:2 }}</td>
+                            <td>{{ ativo.quantidade }}</td>
+                            <td><span class="method-badge">{{ ativo.get_metodo_valuation_display }}</span></td>
+                            <td style="text-align: center;">
+                                <form method="POST" action="{% url 'remover_ativo' ativo.id %}" onsubmit="return confirm('Tem certeza que deseja remover o ativo {{ ativo.acao.ticket }} da sua carteira?');" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" style="background: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger); padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; transition: 0.2s;" title="Remover Ativo">
+                                        <i class="ph ph-trash" style="font-size: 1.1rem; vertical-align: middle;"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="padding: 3rem; text-align: center;">
+                <i class="ph ph-folder-notch-minus" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                <h3 style="color: var(--text-main);">Nenhum ativo cadastrado</h3>
+                <p style="color: var(--text-muted);">Use o formulário acima para adicionar o seu primeiro ativo.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display: flex; gap: 1rem; margin-top: 1.5rem; margin-bottom: 2rem;">
+    <a href="{% url 'dashboard' %}" class="btn-primary">
+        <i class="ph ph-wallet"></i> Ir para o Dashboard
+    </a>
+    <a href="{% url 'configuracoes' %}" class="btn-outline">
+        <i class="ph ph-gear"></i> Ajustar Parâmetros de Valuation
+    </a>
+</div>
+{% endblock %}

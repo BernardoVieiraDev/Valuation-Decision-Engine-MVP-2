@@ -1,0 +1,268 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Playbook | Aporte{% endblock %}
+
+{% block nav_simulador %}active{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .main-content { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .main-content > .container { max-width: none; }
+  .dashboard-grid { grid-template-columns: minmax(0, 3fr) minmax(360px, 2fr); }
+  .main-column, .side-column { min-width: 0; }
+  .panel-header { gap: .75rem; flex-wrap: wrap; }
+  .actions-bar { flex-wrap: wrap; }
+  .data-table th, .data-table td { padding: .85rem .75rem; }
+  .main-column .data-table { table-layout: fixed; min-width: 720px; }
+  .main-column .data-table th, .main-column .data-table td { padding: .8rem .5rem; font-size: .8rem; }
+  .main-column .data-table th { white-space: normal; font-size: .7rem; }
+  .main-column .method-badge { display: inline-block; white-space: normal; font-size: .7rem; }
+  .main-column .data-table th:nth-child(1) { width: 11%; }
+  .main-column .data-table th:nth-child(2) { width: 17%; }
+  .main-column .data-table th:nth-child(3) { width: 13%; }
+  .main-column .data-table th:nth-child(4) { width: 6%; }
+  .main-column .data-table th:nth-child(5) { width: 14%; }
+  .main-column .data-table th:nth-child(6) { width: 13%; }
+  .main-column .data-table th:nth-child(7) { width: 15%; }
+  .main-column .data-table th:nth-child(8) { width: 11%; }
+  .side-column .panel > form { padding-top: 1.25rem; }
+  .side-column .panel-header { padding: 1.25rem 1.5rem; }
+  @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+{% endblock %}
+{% block content %}
+{% for message in messages %}
+<div role="status" class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">{{ message }}</div>
+{% endfor %}
+<header class="top-header">
+    <h1>Aporte</h1>
+    <p>Análise de ativos e cálculo inteligente de preço-teto, integrado ao simulador de aportes.</p>
+</header>
+
+{% if erro %}
+    <div class="alert alert-danger">
+        <i class="ph ph-warning-circle"></i> {{ erro }}
+    </div>
+{% endif %}
+{% if sucesso %}
+    <div class="alert alert-success">
+        <i class="ph ph-check-circle"></i> {{ sucesso }}
+    </div>
+{% endif %}
+
+{% if carteira %}
+    <div class="dashboard-grid">
+        <!-- COLUNA ESQUERDA: CARTEIRA E TABELA -->
+        <div class="main-column">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2><i class="ph ph-folder-open"></i> {{ carteira.nome }}</h2>
+                    <span class="badge-total">Valor Total: R$ {{ carteira.valor_total|floatformat:2 }}</span>
+                </div>
+                <form method="POST" class="actions-bar">
+                    {% csrf_token %}
+                    <button type="submit" name="atualizar_precos" class="btn-outline">
+                        <i class="ph ph-arrows-clockwise"></i> Atualizar Cotações
+                    </button>
+                    <button type="submit" name="calcular_tetos" class="btn-primary">
+                        <i class="ph ph-target"></i> Calcular Preços-Teto
+                    </button>
+                </form>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Ativo</th><th>Método</th><th>Preço Atual</th>
+                                <th>Qtd</th><th>Total</th><th>Preço-Teto</th>
+                                <th>M. Segurança</th><th>% Atual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ativo in ativos_ordenados %}
+                            <tr id="linha-ativo-{{ ativo.id }}">
+                                <td class="ticker-cell">
+                                    {{ ativo.acao.ticket }}
+                                    <!-- Botão de Reload Individual -->
+                                    <button type="button" onclick="atualizarAtivo({{ ativo.id }}, this)" 
+                                            style="background: none; border: none; cursor: pointer; color: var(--text-muted); margin-left: 5px;" 
+                                            title="Atualizar cotação e teto do ativo">
+                                        <i class="ph ph-arrows-clockwise" id="icon-reload-{{ ativo.id }}"></i>
+                                    </button>
+                                </td>
+                                <td><span class="method-badge">{{ ativo.get_metodo_valuation_display }}</span></td>
+                                <td id="preco-atual-{{ ativo.id }}">R$ {{ ativo.acao.preco_atual|floatformat:2 }}</td>
+                                <td>{{ ativo.quantidade }}</td>
+                                <td id="valor-total-{{ ativo.id }}">R$ {{ ativo.valor_total|floatformat:2 }}</td>
+                                <td id="preco-teto-{{ ativo.id }}">R$ {{ ativo.preco_teto|floatformat:2 }}</td>
+                                <td id="margem-{{ ativo.id }}">
+                                    {% if ativo.margem_de_seguranca > 0 %}
+                                        <span class="text-success">{{ ativo.margem_de_seguranca|floatformat:2 }}%</span>
+                                    {% elif ativo.margem_de_seguranca < 0 %}
+                                        <span class="text-danger">{{ ativo.margem_de_seguranca|floatformat:2 }}%</span>
+                                    {% else %}
+                                        <span style="color: var(--text-muted);">{{ ativo.margem_de_seguranca|floatformat:2 }}%</span>
+                                    {% endif %}
+                                </td>
+                                <td id="percentual-{{ ativo.id }}">
+                                    {% if ativo.percentual_na_carteira > carteira.banda_mais %}
+                                        <span class="text-danger">{{ ativo.percentual_na_carteira|floatformat:2 }}% <i class="ph ph-arrow-up"></i></span>
+                                    {% else %}
+                                        <span>{{ ativo.percentual_na_carteira|floatformat:2 }}%</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Nenhum ativo cadastrado.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA DIREITA: SIMULADOR -->
+        <div class="side-column">
+            <div class="panel">
+                <div class="panel-header" style="background: var(--primary); border: none;">
+                    <h2 style="color: white;"><i class="ph ph-calculator"></i> Simulador de Aporte</h2>
+                </div>
+                <form action="{% url 'simulador_aporte' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Valor a Aportar (R$)</label>
+                        <input type="number" step="0.01" name="valor" value="{{ filtros.valor }}" min="0.01" class="form-input" required placeholder="Ex: 1500.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Estratégia</label>
+                        <select name="estrategia" class="form-input">
+                            <option value="dividido">Estratégia Dividida</option>
+                            <option value="concentrado" {% if filtros.estrategia == "concentrado" %}selected{% endif %}>Estratégia Concentrada</option>
+                        </select>
+                    </div>
+
+                    <!-- REGRAS E FILTROS -->
+                    <div class="form-group">
+                        <label>Tipos de Ativos Permitidos</label>
+                        <div style="display: flex; gap: 1rem; color: var(--text-muted); font-size: 0.85rem; flex-wrap: wrap;">
+                            <label><input type="checkbox" name="tipos_permitidos" value="acao" {% if "acao" in tipos_selecionados %}checked{% endif %}> Ações</label>
+                            <label><input type="checkbox" name="tipos_permitidos" value="fii" {% if "fii" in tipos_selecionados %}checked{% endif %}> FIIs</label>
+                            <label><input type="checkbox" name="tipos_permitidos" value="etf" {% if "etf" in tipos_selecionados %}checked{% endif %}> ETFs</label>
+                            <label><input type="checkbox" name="tipos_permitidos" value="cripto" {% if "cripto" in tipos_selecionados %}checked{% endif %}> Criptos</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Limite de Ativos a Aportar (Opcional)</label>
+                        <input type="number" step="1" min="1" name="limite_ativos" value="{{ filtros.limite_ativos }}" class="form-input" placeholder="Ex: 3">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ignorar Ativos (Opcional)</label>
+                        <span style="display:block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Segure CTRL (ou CMD no Mac) para selecionar múltiplos</span>
+                        <select multiple name="ativos_excluidos" class="form-input" style="height: 120px;">
+                            <optgroup label="Ações">
+                                {% for ativo in carteira.ativos.all %}
+                                    <option value="{{ ativo.acao.ticket }}" {% if ativo.acao.ticket in excluidos_selecionados %}selected{% endif %}>{{ ativo.acao.ticket }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="FIIs">
+                                {% for ativo in carteira.fiis.all %}
+                                    <option value="{{ ativo.fii.ticket }}" {% if ativo.fii.ticket in excluidos_selecionados %}selected{% endif %}>{{ ativo.fii.ticket }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="ETFs">
+                                {% for ativo in carteira.etfs_br.all %}
+                                    <option value="{{ ativo.etf.ticket }}" {% if ativo.etf.ticket in excluidos_selecionados %}selected{% endif %}>{{ ativo.etf.ticket }}</option>
+                                {% endfor %}
+                                {% for ativo in carteira.etfs_internacionais.all %}
+                                    <option value="{{ ativo.etf.ticket }}" {% if ativo.etf.ticket in excluidos_selecionados %}selected{% endif %}>{{ ativo.etf.ticket }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="Criptomoedas">
+                                {% for ativo in carteira.criptos.all %}
+                                    <option value="{{ ativo.cripto.ticket }}" {% if ativo.cripto.ticket in excluidos_selecionados %}selected{% endif %}>{{ ativo.cripto.ticket }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                    </div>
+                    <!-- FIM REGRAS E FILTROS -->
+
+                    <button type="submit" name="calcular_aporte" class="btn-primary btn-full">Simular Aporte</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+{% else %}
+    <div class="panel" style="padding: 3rem; text-align: center;">
+        <i class="ph ph-folder-notch-minus" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+        <h3 style="color: var(--text-main);">Nenhuma carteira encontrada</h3>
+        <p style="color: var(--text-muted);">Execute o script de carga ou adicione ativos pelo painel de administração.</p>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if resumo %}{% include "aporte/resumo_modal.html" %}{% endif %}
+<style>
+@keyframes spin { 
+    100% { transform: rotate(360deg); } 
+}
+
+.icon-spinning {
+    animation: spin 1s linear infinite;
+}
+</style>
+
+<script>
+async function atualizarAtivo(ativoId, btnElement) {
+    const icon = document.getElementById(`icon-reload-${ativoId}`);
+    
+    icon.classList.add('icon-spinning');
+    btnElement.disabled = true;
+
+    try {
+        const response = await fetch(`/atualizar-ativo/${ativoId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.sucesso) {
+            const fmt = (num) => parseFloat(num).toFixed(2).replace('.', ',');
+
+            document.getElementById(`preco-atual-${ativoId}`).innerText = `R$ ${fmt(data.preco_atual)}`;
+            document.getElementById(`preco-teto-${ativoId}`).innerText = `R$ ${fmt(data.preco_teto)}`;
+            document.getElementById(`valor-total-${ativoId}`).innerText = `R$ ${fmt(data.valor_total)}`;
+            
+            const margemTd = document.getElementById(`margem-${ativoId}`);
+            let margemHtml = '';
+            if (data.margem_seguranca > 0) {
+                margemHtml = `<span class="text-success">${fmt(data.margem_seguranca)}%</span>`;
+            } else if (data.margem_seguranca < 0) {
+                margemHtml = `<span class="text-danger">${fmt(data.margem_seguranca)}%</span>`;
+            } else {
+                margemHtml = `<span style="color: var(--text-muted);">${fmt(data.margem_seguranca)}%</span>`;
+            }
+            margemTd.innerHTML = margemHtml;
+
+        } else {
+            const msgErro = data.erro || data.detail || data.error || JSON.stringify(data);
+            console.error('Erro na API:', msgErro);
+            alert('Não foi possível atualizar: ' + msgErro);
+        }
+    } catch (error) {
+        console.error('Erro de requisição:', error);
+        alert('Erro ao conectar com o servidor para atualizar o ativo. Verifique o terminal.');
+    } finally {
+        icon.classList.remove('icon-spinning');
+        btnElement.disabled = false;
+    }
+}
+</script>
+{% endblock %}
